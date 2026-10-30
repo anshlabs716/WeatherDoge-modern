@@ -63,7 +63,6 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.getbase.floatingactionbutton.FloatingActionsMenu;
 import com.google.android.material.snackbar.Snackbar;
 import com.plattysoft.leonids.ParticleSystem;
 import com.versobit.weatherdoge.location.ApiStatus;
@@ -116,7 +115,6 @@ final public class MainActivity extends Activity implements LocationReceiver,
     private TextView suchTemp;
     private TextView suchDegree;
     private TextView suchLocation;
-    private FloatingActionsMenu suchMenu;
     private DogeLocationApi wowApi = FlavoredApiSelector.get();
     private Location whereIsDoge;
     private Typeface wowComicSans;
@@ -193,8 +191,6 @@ final public class MainActivity extends Activity implements LocationReceiver,
         suchTemp = (TextView)findViewById(R.id.main_suchtemp);
         suchDegree = (TextView)findViewById(R.id.main_suchdegree);
         suchLocation = (TextView)findViewById(R.id.main_suchlocation);
-        suchMenu = (FloatingActionsMenu)findViewById(R.id.main_fam);
-        findViewById(R.id.man_fab_share).setOnClickListener(v -> {
             Intent i = new Intent(Intent.ACTION_SEND);
             i.setType("text/plain");
             if(weatherAdjectives == null) {
@@ -211,14 +207,10 @@ final public class MainActivity extends Activity implements LocationReceiver,
                 i.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.share_title, temp, currentLocation));
                 i.putExtra(Intent.EXTRA_TEXT, getString(R.string.share_text, WeatherDoge.getDogeism(wows, dogefixes, weatherAdjectives), temp, currentLocation));
             }
-            suchMenu.collapse();
             startActivity(Intent.createChooser(i, getString(R.string.action_share)));
-        });
         findViewById(R.id.man_fab_options).setOnClickListener(v -> {
-            suchMenu.collapse();
             startActivity(new Intent(MainActivity.this, OptionsActivity.class));
         });
-
         updateFont();
         updateShadow();
 
@@ -329,26 +321,11 @@ final public class MainActivity extends Activity implements LocationReceiver,
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
-        // Close the FAB if the user taps elsewhere
-        if (ev.getAction() == MotionEvent.ACTION_DOWN && suchMenu.isExpanded()) {
-            Rect outRect = new Rect();
-            suchMenu.getGlobalVisibleRect(outRect);
-            if (!outRect.contains((int)ev.getRawX(), (int)ev.getRawY())) {
-                suchMenu.collapse();
-            }
-        }
-
         return super.dispatchTouchEvent(ev);
     }
 
     @Override
     public void onBackPressed() {
-        // Close the FAB with the back button if it's open
-        if(suchMenu.isExpanded()) {
-            suchMenu.collapse();
-            return;
-        }
-
         super.onBackPressed();
     }
 

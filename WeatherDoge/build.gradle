@@ -16,91 +16,97 @@ Closure<String[]> getVersionDef = {
     new File('WeatherDoge/versionDef.txt').text.trim().split('\\r?\\n')
 }
 
-Closure<String> getVersionNameSuffix = { flavor ->
-    flavor + '-' + gitRev()
-}
-
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 android {
-    compileSdk 35
+    compileSdk 36
     defaultConfig {
         minSdkVersion 21
-        targetSdkVersion 35
+        targetSdkVersion 36
         applicationId "com.versobit.weatherdoge"
         versionCode getVersionDef()[0].toInteger()
         versionName getVersionDef()[1]
-        buildConfigField 'String', 'FLAVOR_PLAY', '"play"'
-        buildConfigField 'String', 'FLAVOR_FOSS', '"foss"'
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     packagingOptions {
         resources {
             excludes += ['META-INF/LICENSE.txt', 'META-INF/NOTICE.txt']
         }
     }
-    flavorDimensions 'version'
-    productFlavors {
-        play {
-            versionNameSuffix getVersionNameSuffix('p')
-        }
-        foss {
-            dimension 'version'
-            applicationIdSuffix '.foss'
-            versionNameSuffix getVersionNameSuffix('f')
-        }
-    }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
     buildTypes {
         release {
             minifyEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
     namespace 'com.versobit.weatherdoge'
     buildFeatures {
         buildConfig true
     }
+    testOptions {
+        unitTests {
+            returnDefaultValues = true
+        }
+    }
 }
 
 dependencies {
-    implementation project(path: ':LeonidsLib')
-    playImplementation 'com.google.android.gms:play-services-location:21.3.0'
-    implementation 'commons-io:commons-io:2.16.1'
-    implementation 'org.apache.commons:commons-lang3:3.5'
+    implementation project(':LeonidsLib')
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0'
+
+    implementation 'androidx.core:core-ktx:1.15.0'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.preference:preference-ktx:1.2.1'
     implementation 'com.google.android.material:material:1.12.0'
-    implementation 'com.getbase:floatingactionbutton:1.10.1'
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    implementation 'com.getbase:floatingactionbutton:1.10.0'
+    implementation 'org.apache.commons:commons-lang3:3.12.0'
+    implementation 'commons-io:commons-io:2.11.0'
 
     def work_version = '2.10.0'
     implementation "androidx.work:work-runtime:$work_version"
     implementation "androidx.work:work-runtime-ktx:$work_version"
+
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20240303'
+    testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0'
 }
 
-// Find and apply the signing file
-// See signing.template.gradle for more information
+// Local, never-committed media overrides. Files in local-extras/ (git-ignored) replace the
+// corresponding original synthesized sound in assets/sounds/ for local builds only.
+// This keeps copyrighted material out of the repository while letting the developer
+// build a personal APK with their own media. See local-extras/README.txt.
+def localExtrasDir = project.rootProject.file('local-extras')
+def localExtrasOut = project.layout.buildDirectory.dir("localExtrasAssets/sounds").get().asFile
+android.sourceSets.main.assets.srcDir(localExtrasOut.parentFile)
+tasks.register('copyLocalExtras', Copy) {
+    from localExtrasDir
+    include '*.mp3', '*.aac', '*.m4a', '*.ogg', '*.wav', '*.mp4'
+    into localExtrasOut
+}
+tasks.named('preBuild').configure { dependsOn 'copyLocalExtras' }
+
+// Optional developer credentials. Open-Meteo (the default provider) needs no key.
+// OpenWeatherMap/AccuWeather keys may be provided locally for convenience; users can
+// also enter their own OWM key in the app settings. Keys must never be committed.
 Properties localProps = new Properties()
-localProps.load(project.rootProject.file('local.properties').newDataInputStream())
-String signingFile = localProps.getProperty('signing.file')
-if (signingFile != null) {
-    if (new File(signingFile).exists()) {
-        apply from: signingFile
-    } else {
-        throw new InvalidUserDataException('Signing configuration file does not exist: ' +
-                signingFile)
-    }
-} else {
-    logger.log(LogLevel.WARN, 'WARNING: No signing configuration file defined.')
+File localPropsFile = project.rootProject.file('local.properties')
+if (localPropsFile.exists()) {
+    localProps.load(localPropsFile.newDataInputStream())
 }
-repositories {
-    mavenCentral()
-}
+android.defaultConfig.buildConfigField 'String', 'OWM_APPID', '"' + (localProps.getProperty('owm.appid') ?: '') + '"'
+android.defaultConfig.buildConfigField 'String', 'ACCUWEATHER_KEY', '"' + (localProps.getProperty('accuweather.key') ?: '') + '"'
+android.defaultConfig.buildConfigField 'String', 'FLAVOR', '"FOSS"'
+android.defaultConfig.buildConfigField 'String', 'FLAVOR_FOSS', '"FOSS"'
+android.defaultConfig.buildConfigField 'String', 'FLAVOR_PLAY', '"PLAY"'
 
 kotlin {
     jvmToolchain 17

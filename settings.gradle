@@ -1,2 +1,3 @@
+rootProject.name = 'WeatherDoge'
 include ':WeatherDoge'
 include ':LeonidsLib'

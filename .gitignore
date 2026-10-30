@@ -33,3 +33,6 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Local user-provided media (copyrighted files must never be committed)
+local-extras/

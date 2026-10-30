@@ -61,20 +61,5 @@
         <item name="colorControlNormal">@android:color/black</item>
     </style>
 
-    <style name="AppTheme.Fab.MenuLabel">
-        <item name="android:background">@drawable/fab_label_background</item>
-        <item name="android:textColor">@color/offwhite</item>
-    </style>
-    
-    <style name="AppTheme.Fab.Menu">
-        <item name="fab_labelStyle">@style/AppTheme.Fab.MenuLabel</item>
-        <item name="fab_addButtonColorNormal">@color/fab</item>
-        <item name="fab_addButtonColorPressed">@color/fab_pressed</item>
-    </style>
-
-    <style name="AppTheme.Fab">
-        <item name="fab_colorNormal">@color/fab</item>
-        <item name="fab_colorPressed">@color/fab_pressed</item>
-    </style>
 
 </resources>

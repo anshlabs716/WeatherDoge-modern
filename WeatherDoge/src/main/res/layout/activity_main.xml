@@ -169,6 +169,7 @@
 
     </RelativeLayout>
 
+
     <com.getbase.floatingactionbutton.FloatingActionsMenu
         android:id="@+id/main_fam"
         android:layout_width="wrap_content"
@@ -176,9 +177,7 @@
         android:layout_margin="16dp"
         android:layout_gravity="end|bottom"
         app:fab_labelsPosition="left"
-        app:fab_addButtonSize="mini"
-        app:layout_behavior="de.ph1b.audiobook.uitools.FabBehavior"
-        style="@style/AppTheme.Fab.Menu">
+        app:fab_addButtonSize="mini">
 
         <com.getbase.floatingactionbutton.FloatingActionButton
             android:id="@+id/man_fab_share"
@@ -186,8 +185,7 @@
             android:layout_height="wrap_content"
             app:fab_title="@string/action_share"
             app:fab_icon="@drawable/ic_share_white_48dp"
-            app:fab_size="mini"
-            style="@style/AppTheme.Fab" />
+            app:fab_size="mini" />
 
         <com.getbase.floatingactionbutton.FloatingActionButton
             android:id="@+id/man_fab_options"
@@ -195,9 +193,7 @@
             android:layout_height="wrap_content"
             app:fab_title="@string/action_options"
             app:fab_icon="@drawable/ic_settings_white_48dp"
-            app:fab_size="mini"
-            style="@style/AppTheme.Fab" />
+            app:fab_size="mini" />
 
     </com.getbase.floatingactionbutton.FloatingActionsMenu>
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

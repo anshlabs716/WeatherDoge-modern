@@ -1,0 +1,6 @@
+android {
+    defaultConfig {
+        buildConfigField 'String', 'OWM_APPID', '""'
+        buildConfigField 'String', 'ACCUWEATHER_KEY', '""'
+    }
+}

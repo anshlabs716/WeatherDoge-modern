@@ -36,3 +36,6 @@ google-services.json
 
 # Local user-provided media (copyrighted files must never be committed)
 local-extras/
+
+# Generated audio assets (built by gen-assets/make_audio.py)
+gen-assets/out/

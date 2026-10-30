@@ -25,16 +25,12 @@ wow. Weather Doge is the full [dogeweather.com](https://web.archive.org/web/2023
 
 ## Licensing
 
-Copyright © 2014-2025 VersoBit. Weather Doge is licensed under the GNU GPLv3 which can be found in `LICENSE.md`.
+Copyright © 2014-2026 VersoBit. Weather Doge is licensed under the GNU GPLv3 which can be found in `LICENSE.md`.
 
 The background images, doge images, and doge adjectives are from the [dogeweather](https://web.archive.org/web/20160221202800/https://github.com/katiaeirin/dogeweather) project licensed under the [MIT license](https://opensource.org/licenses/MIT).
 
-The VersoBit logo is Copyright © 2019 [VersoBit](https://versobit.com). All Rights Reserved.
-
-Weather Doge uses a number of open-source tools and libraries. Check the "Other Shibes" dialog from within the app or open `WeatherDoge/src/main/assets/othershibes.html` in your browser.
+The VersoBit logo is Copyright © 2026 [VersoBit](https://versobit.com). All Rights Reserved.
 
 Have fun!
 
 --
-
-Android, Google Play, and the Google Play logo are trademarks of Google Inc.

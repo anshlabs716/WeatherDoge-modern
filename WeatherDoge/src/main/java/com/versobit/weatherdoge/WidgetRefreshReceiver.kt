@@ -27,10 +27,16 @@ class WidgetRefreshReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
-            WidgetWorker.ACTION_REFRESH_MULTIPLE ->
-                WidgetWorker.enqueueOnceMultiple(intent.getIntArrayExtra(WidgetWorker.EXTRA_WIDGET_ID))
-            WidgetWorker.ACTION_REFRESH_ONE ->
-                WidgetWorker.enqueueOnceSingle(intent.getIntExtra(WidgetWorker.EXTRA_WIDGET_ID, 0))
+            WidgetWorker.ACTION_REFRESH_MULTIPLE -> {
+                val ids = intent.getIntArrayExtra(WidgetWorker.EXTRA_WIDGET_ID)
+                if (ids != null) {
+                    WidgetWorker.enqueueOnceMultiple(context, ids)
+                }
+            }
+            WidgetWorker.ACTION_REFRESH_ONE -> {
+                val id = intent.getIntExtra(WidgetWorker.EXTRA_WIDGET_ID, 0)
+                WidgetWorker.enqueueOnceSingle(context, id)
+            }
         }
     }
 }

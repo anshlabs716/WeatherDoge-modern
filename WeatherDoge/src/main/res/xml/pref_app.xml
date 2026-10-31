@@ -36,4 +36,27 @@
         android:defaultValue="true"
         android:summary="@string/pref_disable_particles_desc" />
 
+    <PreferenceCategory android:title="@string/pref_sound_header">
+        <CheckBoxPreference
+            android:key="pref_sound_master_mute"
+            android:title="@string/pref_sound_master_mute_title"
+            android:summary="@string/pref_sound_master_mute_desc"
+            android:defaultValue="false" />
+        <CheckBoxPreference
+            android:key="pref_sound_music"
+            android:title="@string/pref_sound_music_title"
+            android:summary="@string/pref_sound_music_desc"
+            android:defaultValue="true" />
+        <CheckBoxPreference
+            android:key="pref_sound_sfx"
+            android:title="@string/pref_sound_sfx_title"
+            android:summary="@string/pref_sound_sfx_desc"
+            android:defaultValue="true" />
+        <CheckBoxPreference
+            android:key="pref_sound_bonk"
+            android:title="@string/pref_sound_bonk_title"
+            android:summary="@string/pref_sound_bonk_desc"
+            android:defaultValue="true" />
+    </PreferenceCategory>
+
 </PreferenceScreen>

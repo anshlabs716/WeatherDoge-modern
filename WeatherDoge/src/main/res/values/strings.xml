@@ -22,6 +22,12 @@
     <string name="app_name">Weather Doge</string>
     <string name="action_share">Share</string>
     <string name="action_options">Options</string>
+    <string name="action_airhorn">Airhorn</string>
+    <string name="action_chaos">Chaos Mode</string>
+    <string name="action_nyan">Nyan Cat</string>
+    <string name="action_music">Toggle Music</string>
+    <string name="action_forecast">7-Day Forecast</string>
+    <string name="forecast_title">7-Day Doge Forecast</string>
 
     <string name="share_title">%1$s in %2$s - Weather Doge</string>
     <string name="share_text">%1$s. It\'s %2$s in %3$s.\n\nWow, this shibe is using Weather Doge for Android. https://play.google.com/store/apps/details?id=com.versobit.weatherdoge</string>
@@ -38,6 +44,16 @@
     <string name="save">Save</string>
 
     <string name="location_rationale_text">Weather Doge needs your location to provide dynamic weather data and will request that ability in a moment. If you prefer, you may instead provide a static location in the options.</string>
+
+    <string name="pref_sound_header">Sound Settings</string>
+    <string name="pref_sound_master_mute_title">Mute All Sounds</string>
+    <string name="pref_sound_master_mute_desc">Disable all audio effects and music</string>
+    <string name="pref_sound_music_title">Background Music</string>
+    <string name="pref_sound_music_desc">Play chill ambient background music loop</string>
+    <string name="pref_sound_sfx_title">Sound Effects</string>
+    <string name="pref_sound_sfx_desc">Enable SFX including chaos mode and airhorn</string>
+    <string name="pref_sound_bonk_title">Bonk Sounds</string>
+    <string name="pref_sound_bonk_desc">Bonk on UI taps and touching Doge</string>
     <string name="location_rationale_negative">Options</string>
     <string name="location_rationale_positive">Continue</string>
     <string name="location_snackbar_text">Location access required</string>

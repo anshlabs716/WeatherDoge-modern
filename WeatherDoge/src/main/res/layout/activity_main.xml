@@ -190,6 +190,42 @@
             style="@style/AppTheme.Fab" />
 
         <com.getbase.floatingactionbutton.FloatingActionButton
+            android:id="@+id/man_fab_forecast"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:fab_title="@string/action_forecast"
+            app:fab_icon="@drawable/ic_doge_circle_notif"
+            app:fab_size="mini"
+            style="@style/AppTheme.Fab" />
+
+        <com.getbase.floatingactionbutton.FloatingActionButton
+            android:id="@+id/man_fab_airhorn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:fab_title="@string/action_airhorn"
+            app:fab_icon="@drawable/ic_doge_circle_notif"
+            app:fab_size="mini"
+            style="@style/AppTheme.Fab" />
+
+        <com.getbase.floatingactionbutton.FloatingActionButton
+            android:id="@+id/man_fab_chaos"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:fab_title="@string/action_chaos"
+            app:fab_icon="@drawable/ic_doge_circle_notif"
+            app:fab_size="mini"
+            style="@style/AppTheme.Fab" />
+
+        <com.getbase.floatingactionbutton.FloatingActionButton
+            android:id="@+id/man_fab_nyan"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:fab_title="@string/action_nyan"
+            app:fab_icon="@drawable/ic_doge_circle_notif"
+            app:fab_size="mini"
+            style="@style/AppTheme.Fab" />
+
+        <com.getbase.floatingactionbutton.FloatingActionButton
             android:id="@+id/man_fab_options"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

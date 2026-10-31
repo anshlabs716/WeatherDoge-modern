@@ -1,0 +1,1966 @@
+Facts first, one line: the checksums came back — 5 of your 6 "new" files are byte-for-byte identical to the old ones (BONK!.mp3 = old bonk, cat on keyboard.mp3 = old Keyboard Cat, frutigermusic.aac = the same Secret_Potion Wii U Mii Maker mix, MLG.mp3 = old QuickSounds airhorn, meow cat.mp4 = old nyan video). Only meow cat.mp3 is actually new. So nothing changed legally — not re-arguing it though, we're settled: they live in local-extras/, play on your device, never get published. Credits for inspiration go in the About dialog as you asked (that part's harmless and I'll add it).
+Final sound map locked (oof dropped, as you said):
+Slot	Your file (device)	Published fallback
+Tap + doge touch	BONK!.mp3	original bonk
+Background music (loop, pauses for chaos)	frutigermusic.aac	original chill loop
+Chaos: keyboard cat	cat on keyboard.mp3	original riff
+Chaos: meow	meow cat.mp3 ✅ (your only real new file)	original meow
+Chaos: airhorn	MLG.mp3	original horn
+NYAN tab video (loops while open)	meow cat.mp4	built-in rainbow-cat animation
+Updating local-extras/ now and writing the SoundManager:
+$ cd /home/ansh/WeatherDoge-modern/local-extras && rm -f oof.mp3 && cp -n "/home/ansh/meow cat.mp3" meow.mp3 && cat > README.txt <<'EOF'…
+(4 earlier lines)
+-rw-r--r--  1 ansh ansh  5384454 Oct 30 18:07 bg_music.aac
+-rw-r--r--  1 ansh ansh     4081 Oct 30 18:07 bonk.mp3
+-rw-r--r--  1 ansh ansh   203632 Oct 30 18:07 keyboard_cat.mp3
+-rw-r--r--  1 ansh ansh  3383841 Oct 30 18:42 meow.mp3
+-rw-rw-r--  1 ansh ansh 11293284 Oct 30 18:07 nyan.mp4
+-rw-rw-r--  1 ansh ansh      525 Oct 30 18:42 README.txt
++Thought · 26.3s
+local-extras/ is finalized (6 slots). Now generating the 3 missing built-in originals (bonk, chill bg loop, meow), then wiring them into the app:
+← EditWeatherDoge-modern/gen-assets/make_audio.py
+wow = [(0.0, 0.5, 88, 0.9), (0.05, 0.5, 93, 0.6)]wow = [(0.0, 0.5, 88, 0.9), (0.05, 0.5, 93, 0.6)]
+write_wav("wow_chime.wav", render(wow, gain=0.35, kind="sine"))write_wav("wow_chime.wav", render(wow, gain=0.35, kind="sine"))
+
+# ---------------------------------------------------------------------------# ---------------------------------------------------------------------------
+# 5b) BONK! - original cartoon bonk (woodblock hit + pitch drop), used for
+#     BOTH ui taps and doge touch
+# ---------------------------------------------------------------------------
+import random
+random.seed(7)
+bonk = []
+dur = 0.22
+n = int(dur * SR)
+for i in range(n):
+    t = i / SR
+    # pitch sweep down 700->180Hz (the "doink")
+    f = 700 * math.exp(-9 * t) + 180
+    ph = 0.0
+    # integrate freq for phase
+    ph = 2 * math.pi * (700 * (1 - math.exp(-9 * t)) / 9 + 180 * t)
+    v = math.sin(ph) * 0.8 + math.sin(2.3 * ph) * 0.2
+    # transient click at start
+    if t < 0.008:
+        v += random.uniform(-1, 1) * 0.7
+    bonk.append(v * env(t, dur, a=0.001, r=0.12) * 0.9)
+write_wav("bonk.wav", bonk)
+
+# ---------------------------------------------------------------------------
+# 5c) MEOW - original synthesized cat meow (chaos mode), glottal-ish buzz
+# ---------------------------------------------------------------------------
+meow = []
+dur = 0.5
+n = int(dur * SR)
+for i in range(n):
+    t = i / SR
+    x = t / dur
+    # meow pitch curve: rise then fall, 500->750->400 Hz
+    f = 500 + 350 * math.sin(math.pi * min(1.0, x * 1.15)) - 100 * x
+    vib = 1 + 0.02 * math.sin(2 * math.pi * 6 * t)
+    f *= vib
+    ph = 2 * math.pi * f * t
+    # buzzy source filtered feel: saw + 2 harmonics
+    v = math.sin(ph) + 0.5 * math.sin(2 * ph) + 0.3 * math.sin(3 * ph) + 0.15 * math.sin(4 * ph)
+    # formant-ish emphasis mid-meow
+    v *= 0.8 + 0.2 * math.sin(math.pi * x)
+    meow.append(v * env(t, dur, a=0.03, r=0.15) * 0.55)
+write_wav("meow.wav", meow)
+
+# ---------------------------------------------------------------------------
+# 5d) Chill background music loop - original, mellow lofi-ish 4-bar loop.
+#     Slow tempo, soft sine keys + gentle bass, designed to loop seamlessly.
+# ---------------------------------------------------------------------------
+BPM2 = 76
+B2 = 60.0 / BPM2
+bars = 4
+# Am - F - C - G (mellow, inoffensive, original)
+prog2 = [("A", "min"), ("F", "maj"), ("C", "maj"), ("G", "maj")]
+roots2 = {"A": 45, "F": 41, "C": 48, "G": 43}
+pad = []
+bass2 = []
+arp = []
+total2 = bars * 4 * B2
+for bar, (name, kind) in enumerate(prog2):
+    r = roots2[name]
+    for iv in chord(r + 12, kind):  # pad chord, soft
+        pad.append((bar * 4 * B2, 4 * B2, iv, 0.30))
+    bass2.append((bar * 4 * B2, 2 * B2, r - 12, 0.55))
+    bass2.append((bar * 4 * B2 + 2 * B2, 2 * B2, r - 12 + 7, 0.40))
+    # gentle arpeggio (8ths)
+    ivs = chord(r + 24, kind)
+    for k in range(8):
+        arp.append((bar * 4 * B2 + k * B2 / 2, B2 * 0.45, ivs[k % len(ivs)], 0.22))
+tracks2 = [render(pad, gain=0.28, kind="sine"),
+           render(bass2, gain=0.40, kind="tri"),
+           render(arp, gain=0.26, kind="sine", vib=0.003, vibhz=4.5)]
+total = max(len(t) for t in tracks2)
+bg = [0.0] * total
+for t in tracks2:
+    for i in range(len(t)):
+        bg[i] += t[i]
+# equal-power crossfade of last 0.35s into first 0.35s for a seamless loop
+xf = int(0.35 * SR)
+for i in range(xf):
+    a = i / xf
+    # fold tail into head
+    if i < total:
+        bg[i] = bg[i] * a + bg[total - xf + i] * (1 - a)
+bg = bg[:total - xf]
+write_wav("bg_loop.wav", bg)
+print("ALL OK ->", OUT)
+
+# ---------------------------------------------------------------------------
+# 6) Nyan-ish sparkle (original, not the Nyan Cat tune) for rainbow trail
+# ---------------------------------------------------------------------------
+sp = [(0.0, 0.1, 88, .9), (0.1, 0.1, 93, .9), (0.2, 0.1, 96, .9), (0.3, 0.1, 100, .9)]
+write_wav("sparkle.wav", render(sp, gain=0.3, kind="sine"))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 6) Nyan-ish sparkle (original, not the Nyan Cat tune) for rainbow trail
+# ---------------------------------------------------------------------------
+sp = [(0.0, 0.1, 88, .9), (0.1, 0.1, 93, .9), (0.2, 0.1, 96, .9), (0.3, 0.1, 100, .9)]
+write_wav("sparkle.wav", render(sp, gain=0.3, kind="sine"))
++Thought · 2.7s
+$ cd /home/ansh/WeatherDoge-modern/gen-assets && python3 make_audio.py
+(5 earlier lines)
+wow_chime.wav 0.55 s
+bonk.wav 0.22 s
+meow.wav 0.5 s
+bg_loop.wav 12.28 s
+ALL OK -> /home/ansh/WeatherDoge-modern/gen-assets/out
+sparkle.wav 0.4 s
+ALL OK -> /home/ansh/WeatherDoge-modern/gen-assets/out
++Thought · 833ms
+All 10 original sounds generated. Copying them into the app assets:
+$ cd /home/ansh/WeatherDoge-modern && mkdir -p WeatherDoge/src/main/assets/sounds && cp gen-assets/out/*.wav WeatherDoge/src/main/assets/sounds/ && ls WeatherDoge/src/main/assets/sounds/ && du -sh WeatherDoge/src/main/assets/soun…
+(5 earlier lines)
+mlg_air_horn.wav
+sparkle.wav
+wii_blip.wav
+wii_done.wav
+wow_chime.wav
+1.4M	WeatherDoge/src/main/assets/sounds/
++Thought · 44.0s
+1.4MB of original sounds shipped. Now the core SoundManager (handles local-extras override, audio focus, mute settings):
+# WroteWeatherDoge-modern/WeatherDoge/src/main/java/com/versobit/weatherdoge/ui/sound/SoundManager.kt
+/*
+ * Copyright (C) 2026 Weather Doge contributors
+ *
+ * This file is part of Weather Doge.
+ *
+ * Weather Doge is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Weather Doge is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Weather Doge.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package com.versobit.weatherdoge.ui.sound
+
+import android.content.Context
+import android.content.SharedPreferences
+import android.content.res.AssetFileDescriptor
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
+import android.media.MediaPlayer
+import android.media.SoundPool
+import android.preference.PreferenceManager
+import android.util.Log
+import java.io.IOException
+
+/**
+ * Central audio service. Owns every sound the app can make.
+ *
+ * Slot resolution: a slot (e.g. "bonk") resolves to the first asset file that exists among
+ * the preferred extensions. Local, user-provided media (the git-ignored local-extras source
+ * set, .mp3/.aac/.m4a/.ogg) therefore overrides the built-in original (.wav) automatically,
+ * without the two ever colliding in the build.
+ *
+ * Rules enforced here (see spec §6):
+ *  - No autoplay on launch: background music only starts when explicitly requested.
+ *  - Master mute + independent music/SFX toggles.
+ *  - Audio focus is requested for music and abandoned when it stops.
+ *  - Nothing keeps playing after a sequence is cancelled or the app pauses.
+ */
+class SoundManager(context: Context) {
+
+    enum class Slot(val assetName: String, val extensions: List<String>) {
+        BONK("bonk", listOf("mp3", "m4a", "ogg", "aac", "wav")),
+        BG_MUSIC("bg_loop", listOf("mp3", "m4a", "ogg", "aac", "wav")),
+        CHAOS_MUSIC("chaos_wii_style_loop", listOf("mp3", "m4a", "ogg", "aac", "wav")),
+        KEYBOARD_CAT("keyboard_cat_riff", listOf("mp3", "m4a", "ogg", "aac", "wav")),
+        MEOW("meow", listOf("mp3", "m4a", "ogg", "aac", "wav")),
+        AIRHORN("mlg_air_horn", listOf("mp3", "m4a", "ogg", "aac", "wav")),
+        BLIP("wii_blip", listOf("mp3", "m4a", "ogg", "aac", "wav")),
+        DONE("wii_done", listOf("mp3", "m4a", "ogg", "aac", "wav")),
+        WOW("wow_chime", listOf("mp3", "m4a", "ogg", "aac", "wav")),
+        SPARKLE("sparkle", listOf("mp3", "m4a", "ogg", "aac", "wav"));
+    }
+
+    companion object {
+        private const val TAG = "SoundManager"
+        /** Asset directory probed for user-provided overrides first. */
+        private const val EXTRA_DIR = "sounds"
+        private const val MUSIC_ABANDON_DELAY_MS = 80
+    }
+
+    private val appContext = context.applicationContext
+    private val prefs: SharedPreferences =
+        PreferenceManager.getDefaultSharedPreferences(appContext)
+    private val audioManager =
+        appContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
+    private var soundPool: SoundPool? = null
+    private val soundIds = HashMap<Slot, Int>()
+    private val loaded = HashSet<Slot>()
+    private var poolLoaded = false
+
+    private var musicPlayer: MediaPlayer? = null
+    private var musicSlot: Slot? = null
+    private var musicIsChaos = false
+
+    /** Chaos-specific MediaPlayer (long file, separate lifecycle). */
+    private var chaosPlayer: MediaPlayer? = null
+
+    private var focusRequest: AudioFocusRequest? = null
+    private var listener: AudioManager.OnAudioFocusChangeListener? = null
+
+    var isMusicPlaying: Boolean = false
+        private set
+
+    // ---- settings ------------------------------------------------------------
+
+    val masterMute: Boolean get() = prefs.getBoolean(PREF_MASTER_MUTE, false)
+    val musicEnabled: Boolean get() = prefs.getBoolean(PREF_MUSIC_ENABLED, true)
+    val sfxEnabled: Boolean get() = prefs.getBoolean(PREF_SFX_ENABLED, true)
+    val bonkEnabled: Boolean get() = prefs.getBoolean(PREF_BONK_ENABLED, true)
+
+    // ---- lifecycle -----------------------------------------------------------
+
+    init {
+        val attrs = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_GAME)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+        soundPool = SoundPool.Builder().setMaxStreams(4).setAudioAttributes(attrs).build()
+        // Preload every resolvable slot so taps are never late.
+        Slot.entries.forEach { resolveAndLoad(it) }
+    }
+
+    /** Call from Application.onTerminate / tests. */
+    fun release() {
+        stopMusic(abandonFocus = true)
+        stopChaosMusic()
+        soundPool?.release()
+        soundPool = null
+        soundIds.clear()
+        loaded.clear()
+    }
+
+    // ---- slot resolution -----------------------------------------------------
+
+    /**
+     * Find the actual asset path for a slot. User overrides (mp3/aac/...) win over the
+     * built-in originals (wav). Returns e.g. "sounds/bonk.mp3" or null.
+     */
+    fun resolveAsset(slot: Slot): String? {
+        for (ext in slot.extensions) {
+            val candidate = "$EXTRA_DIR/${slot.assetName}.$ext"
+            val fallback = "$EXTRA_DIR/${slot.assetName}.wav"
+            // Probe order is controlled by extension priority in Slot, but a user-provided
+            // file must win over the built-in wav even if the loop would reach wav first.
+            if (slot.extensions.first() == "mp3" && ext != "wav") {
+                if (assetExists(candidate)) return candidate
+            }
+            if (ext == "wav" && assetExists(fallback)) {
+                // Only use built-in if no user file was found above.
+                val userProvided = slot.extensions.any { it != "wav" && assetExists("$EXTRA_DIR/${slot.assetName}.$it") }
+                if (!userProvided) return fallback
+            }
+        }
+        // Simplified linear probe as a safety net.
+        for (ext in slot.extensions) {
+            val candidate = "$EXTRA_DIR/${slot.assetName}.$ext"
+            if (assetExists(candidate)) return candidate
+        }
+        return null
+    }
+
+    private fun assetExists(path: String): Boolean = try {
+        appContext.assets.open(path).close()
+        true
+    } catch (e: IOException) {
+        false
+    }
+
+    private fun resolveAndLoad(slot: Slot) {
+        val path = resolveAsset(slot) ?: return
+        try {
+            val afd: AssetFileDescriptor = appContext.assets.openFd(path)
+            val id = soundPool?.load(afd, 1) ?: return
+            soundIds[slot] = id
+            soundPool!!.setOnLoadCompleteListener { _, sampleId, _ ->
+                if (sampleId == id) synchronized(loaded) { loaded.add(slot) }
+            }
+            afd.close()
+        } catch (e: IOException) {
+            Log.w(TAG, "Cannot load sound $path", e)
+        }
+    }
+
+    // ---- one-shot SFX --------------------------------------------------------
+
+    /** Play a short sound effect if SFX are enabled and not globally muted. */
+    fun play(slot: Slot, volume: Float = 1f) {
+        if (masterMute || !sfxEnabled) return
+        if (slot == Slot.BONK && !bonkEnabled) return
+        val id = soundIds[slot] ?: run {
+            resolveAndLoad(slot); soundIds[slot]
+        } ?: return
+        soundPool?.play(id, volume, volume, 1, 0, 1f)
+    }
+
+    /** Bonk is used for both UI taps and the doge touch. */
+    fun playBonk() = play(Slot.BONK)
+
+    // ---- music ---------------------------------------------------------------
+
+    /**
+     * Start (or restart) a looping music slot. Requests audio focus.
+     * @param chaos true for the CHAOS MODE soundtrack (tracked separately from bg music)
+     */
+    @Synchronized
+    fun startMusic(slot: Slot, chaos: Boolean = false) {
+        if (masterMute) return
+        if (!chaos && !musicEnabled) return
+        if (chaos && !musicEnabled) return
+        if (isMusicPlaying && musicSlot == slot && musicPlayer?.isPlaying == true) return
+
+        stopMusicInternal(abandonFocus = false)
+
+        val path = resolveAsset(slot) ?: run {
+            Log.w(TAG, "No asset for music slot $slot"); return
+        }
+        try {
+            val afd = appContext.assets.openFd(path)
+            val player = MediaPlayer()
+            player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+            afd.close()
+            player.isLooping = true
+            player.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(if (chaos) AudioAttributes.USAGE_GAME else AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build()
+            )
+            player.setOnPreparedListener {
+                if (requestFocus()) {
+                    it.start()
+                    isMusicPlaying = true
+                    musicSlot = slot
+                    musicIsChaos = chaos
+                    if (chaos) chaosPlayer = it else musicPlayer = it
+                } else {
+                    it.release()
+                }
+            }
+            player.setOnErrorListener { mp, _, _ ->
+                Log.w(TAG, "MediaPlayer error on $slot")
+                mp.release()
+                if (musicPlayer === mp) musicPlayer = null
+                if (chaosPlayer === mp) chaosPlayer = null
+                isMusicPlaying = false
+                true
+            }
+            player.prepareAsync()
+        } catch (e: IOException) {
+            Log.w(TAG, "Cannot start music $path", e)
+        }
+    }
+
+    /**
+     * Pause the background music (e.g. when CHAOS MODE starts). Remembers position so
+     * [resumeMusic] can restore it exactly.
+     */
+    @Synchronized
+    fun pauseMusic() {
+        val p = musicPlayer ?: return
+        if (p.isPlaying) {
+            try { p.pause() } catch (e: IllegalStateException) { return }
+            isMusicPlaying = false
+        }
+    }
+
+    /** Resume music paused by [pauseMusic]. No-op if music was explicitly stopped. */
+    @Synchronized
+    fun resumeMusic() {
+        if (masterMute || !musicEnabled) return
+        val p = musicPlayer ?: return
+        try {
+            if (!p.isPlaying) {
+                if (requestFocus()) {
+                    p.start()
+                    isMusicPlaying = true
+                }
+            }
+        } catch (e: IllegalStateException) {
+            Log.w(TAG, "resumeMusic failed", e)
+        }
+    }
+
+    /** Stop music entirely (leaving a screen, cancellation). Abandons audio focus. */
+    @Synchronized
+    fun stopMusic(abandonFocus: Boolean = true) = stopMusicInternal(abandonFocus)
+
+    private fun stopMusicInternal(abandonFocus: Boolean) {
+        val p = musicPlayer
+        musicPlayer = null
+        isMusicPlaying = false
+        musicSlot = null
+        if (p != null) {
+            try {
+                if (p.isPlaying) p.stop()
+            } catch (e: IllegalStateException) { /* already gone */ }
+            p.release()
+        }
+        if (abandonFocus) abandonFocus()
+    }
+
+    /** CHAOS soundtrack lifecycle — independent from the normal background music. */
+    @Synchronized
+    fun stopChaosMusic() {
+        val p = chaosPlayer
+        chaosPlayer = null
+        if (musicIsChaos) {
+            musicIsChaos = false
+            musicSlot = null
+            isMusicPlaying = false
+        }
+        if (p != null) {
+            try { if (p.isPlaying) p.stop() } catch (e: IllegalStateException) { }
+            p.release()
+        }
+        abandonFocus()
+    }
+
+    /** True while the app's normal background music track exists. */
+    fun hasBackgroundMusic(): Boolean = musicPlayer != null
+
+    // ---- audio focus ---------------------------------------------------------
+
+    private fun onAudioFocusChanged(change: Int) {
+        when (change) {
+            AudioManager.AUDIOFOCUS_LOSS,
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT,
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                // Another app wants the audio: stop cleanly, never fight over focus.
+                musicPlayer?.let { if (it.isPlaying) it.pause() }
+                chaosPlayer?.let { if (it.isPlaying) it.pause() }
+                isMusicPlaying = false
+            }
+            AudioManager.AUDIOFOCUS_GAIN -> {
+                // We regained focus; only resume if we were the active music source.
+                musicPlayer?.let { p -> if (!p.isPlaying && musicEnabled && !masterMute) p.start(); isMusicPlaying = p.isPlaying }
+            }
+        }
+    }
+
+    private fun requestFocus(): Boolean {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val l = listener ?: AudioManager.OnAudioFocusChangeListener { onAudioFocusChanged(it) }.also { listener = it }
+            val req = focusRequest ?: AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build()
+                )
+                .setWillPauseWhenDucked(false)
+                .setOnAudioFocusChangeListener(l)
+                .build().also { focusRequest = it }
+            return audioManager.requestAudioFocus(req) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+        }
+        @Suppress("DEPRECATION")
+        return audioManager.requestAudioFocus(
+            { onAudioFocusChanged(it) },
+            AudioManager.STREAM_MUSIC,
+            AudioManager.AUDIOFOCUS_GAIN
+        ) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+    }
+
+    private fun abandonFocus() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            focusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+        } else {
+            @Suppress("DEPRECATION")
+            audioManager.abandonAudioFocus(null)
+        }
+        // Media session teardown is async; give the system a beat before another app grabs focus.
+        musicHandler.postDelayed({ /* no-op: focus already abandoned */ }, MUSIC_ABANDON_DELAY_MS)
+    }
+
+    private val musicHandler = android.os.Handler(android.os.Looper.getMainLooper())
+
+    // ---- settings keys (shared with Options) ---------------------------------
+
+    companion object Keys {
+        const val PREF_MASTER_MUTE = "pref_sound_master_mute"
+        const val PREF_MUSIC_ENABLED = "pref_sound_music"
+        const val PREF_SFX_ENABLED = "pref_sound_sfx"
+        const val PREF_BONK_ENABLED = "pref_sound_bonk"
+        const val PREF_BONK_ON_DOGE = "pref_sound_bonk_doge"
+    }
+}
+those sounds only and all legal but add those cedits for like ensure
++Thought · 17.4s
+Understood — those six files only (plus my originals as fallback), and I'll add an "Inspired by / Credits" section in the About dialog crediting Nintendo, Nyan Cat, Keyboard Cat, and QuickSounds. Belt-and-suspenders attribution, exactly as you asked. Your files stay local-extras; published build ships originals. Settled and moving on.
+Continuing implementation — now the weather providers (Open-Meteo + OpenWeatherMap) and the shared repository:
+# WroteWeatherDoge-modern/WeatherDoge/src/main/java/com/versobit/weatherdoge/provider/Http.kt
+/*
+ * Copyright (C) 2026 Weather Doge contributors
+ *
+ * This file is part of Weather Doge.
+ *
+ * Weather Doge is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Weather Doge is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Weather Doge.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package com.versobit.weatherdoge.provider
+
+import java.io.IOException
+import java.io.InputStream
+import java.net.HttpURLConnection
+import java.net.URL
+import java.util.zip.GZIPInputStream
+
+/**
+ * Minimal HTTPS GET helper. Deliberately dependency-free: HttpURLConnection with gzip,
+ * connect/read timeouts, and no retry storms. Every non-2xx status is surfaced as
+ * [HttpStatusException] so providers can distinguish rate limits and bad requests.
+ */
+object Http {
+
+    private const val CONNECT_TIMEOUT_MS = 10_000
+    private const val READ_TIMEOUT_MS = 15_000
+
+    class HttpStatusException(val code: Int, val body: String) :
+        IOException("HTTP $code")
+
+    /** Executes a GET. Caller must consume/close the returned string body. */
+    fun get(url: String, extraHeaders: Map<String, String> = emptyMap()): Response {
+        val conn = URL(url).openConnection() as HttpURLConnection
+        try {
+            conn.connectTimeout = CONNECT_TIMEOUT_MS
+            conn.readTimeout = READ_TIMEOUT_MS
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("Accept-Encoding", "gzip")
+            conn.setRequestProperty("Accept", "application/json")
+            conn.setRequestProperty("User-Agent", "WeatherDoge/1.0")
+            extraHeaders.forEach { (k, v) -> conn.setRequestProperty(k, v) }
+
+            val code = conn.responseCode
+            val stream: InputStream? = if (code in 200..299) {
+                conn.inputStream
+            } else {
+                conn.errorStream
+            }
+            val body = stream?.use { readFully(it) } ?: ""
+            if (code !in 200..299) throw HttpStatusException(code, body)
+            return Response(body, code)
+        } finally {
+            conn.disconnect()
+        }
+    }
+
+    data class Response(val body: String, val code: Int)
+
+    private fun readFully(stream: InputStream): String {
+        val input = if (stream.markSupported()) stream else stream
+        // Transparently decode gzip when the stack did not already do so.
+        val decoded = try {
+            input.mark(2)
+            val buf = ByteArray(2)
+            val n = input.read(buf)
+            input.reset()
+            if (n == 2 && buf[0] == 0x1f.toByte() && buf[1] == 0x8b.toByte()) {
+                GZIPInputStream(input)
+            } else {
+                input
+            }
+        } catch (e: IOException) {
+            input
+        }
+        return decoded.bufferedReader(Charsets.UTF_8).use { it.readText() }
+    }
+}
++Thought · 29.0s
+Now the Open-Meteo provider (issue #10), with official API format:
+# WroteWeatherDoge-modern/WeatherDoge/src/main/java/com/versobit/weatherdoge/provider/OpenMeteoProvider.kt
+/*
+ * Copyright (C) 2026 Weather Doge contributors
+ *
+ * This file is part of Weather Doge.
+ *
+ * Weather Doge is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Weather Doge is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Weather Doge.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package com.versobit.weatherdoge.provider
+
+import com.versobit.weatherdoge.data.DailyForecast
+import com.versobit.weatherdoge.data.WeatherData
+import com.versobit.weatherdoge.data.WeatherResult
+import com.versobit.weatherdoge.data.WeatherSource
+import org.json.JSONObject
+import java.time.Instant
+import java.time.ZoneId
+
+/**
+ * Open-Meteo integration — https://open-meteo.com/en/docs
+ *
+ * Keyless, free for non-commercial use, and it returns the local timezone plus a real
+ * 7-day daily forecast. Attribution: "Weather data by Open-Meteo.com".
+ *
+ * Requests only what the app displays:
+ *  - current: temperature_2m, weather_code, is_day, relative_humidity_2m (unused in UI,
+ *    omitted), precipitation → only temperature/weather_code/is_day are requested
+ *  - daily: weather_code, temperature_2m_max, temperature_2m_min, precipitation_probability_max
+ *
+ * WMO weather codes are mapped onto OpenWeatherMap-style icon IDs because the entire
+ * existing UI (doge art, sky art, adjective arrays) is keyed on them.
+ */
+class OpenMeteoProvider(private val http: (String) -> Http.Response = { Http.get(it) }) {
+
+    companion object {
+        const val ATTRIBUTION = "Weather data by Open-Meteo.com"
+        private const val FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
+        private const val GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
+    }
+
+    fun fetch(latitude: Double, longitude: Double): WeatherResult {
+        val url = StringBuilder(FORECAST_URL)
+            .append("?latitude=").append(String.format(java.util.Locale.US, "%.5f", latitude))
+            .append("&longitude=").append(String.format(java.util.Locale.US, "%.5f", longitude))
+            // Exactly the fields the app uses. Nothing speculative.
+            .append("&current=temperature_2m,weather_code,is_day")
+            .append("&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max")
+            .append("&forecast_days=7")
+            .append("&timezone=auto")
+            .append("&wind_speed_unit=mph")
+            .toString()
+        return fetchAndParse(url, latitude, longitude, placeOverride = null)
+    }
+
+    /** Manual location: resolve through Open-Meteo's geocoding API, then fetch. */
+    fun fetch(location: String): WeatherResult {
+        val trimmed = location.trim()
+        if (trimmed.isEmpty()) {
+            return WeatherResult.ApiError("No location provided.")
+        }
+        val geoUrl = "$GEOCODING_URL?name=${java.net.URLEncoder.encode(trimmed, "UTF-8")}&count=1&language=en&format=json"
+        val geoBody = try {
+            http(geoUrl).body
+        } catch (e: Http.HttpStatusException) {
+            return httpError(e)
+        } catch (e: Exception) {
+            return WeatherResult.Failure(e.message ?: "Network error", e)
+        }
+        try {
+            val results = JSONObject(geoBody)
+            val arr = results.optJSONArray("results")
+            if (arr == null || arr.length() == 0) {
+                return WeatherResult.ApiError("No results found for \"$trimmed\".")
+            }
+            val first = arr.getJSONObject(0)
+            val lat = first.getDouble("latitude")
+            val lon = first.getDouble("longitude")
+            val name = first.optString("name", trimmed)
+            return fetch(lat, lon).let {
+                // Preserve the user's typed name when the geocoder would show something else.
+                if (it is WeatherResult.Success) {
+                    it.copy(data = it.data.copy(place = name))
+                } else it
+            }
+        } catch (e: Exception) {
+            return WeatherResult.Failure("Malformed geocoding response", e)
+        }
+    }
+
+    private fun fetchAndParse(url: String, lat: Double, lon: Double, placeOverride: String?): WeatherResult {
+        val body = try {
+            http(url).body
+        } catch (e: Http.HttpStatusException) {
+            return httpError(e)
+        } catch (e: Exception) {
+            return WeatherResult.Failure(e.message ?: "Network error", e)
+        }
+
+        return try {
+            val json = JSONObject(body)
+            val current = json.getJSONObject("current")
+            val temp = current.getDouble("temperature_2m")
+            val code = current.getInt("weather_code")
+            val isDay = current.optInt("is_day", 1) == 1
+            val timezoneId = json.optString("timezone", "")
+
+            // The API returns "local time" — derive the local epoch day *in the location's
+            // timezone* so day boundaries and DST are handled by the provider, not by us.
+            val localDate = current.getString("time").substring(0, 10)
+            val todayEpochDay = try {
+                java.time.LocalDate.parse(localDate).toEpochDay()
+            } catch (e: Exception) {
+                Instant.now().atZone(ZoneId.of(timezoneId.ifEmpty { "UTC" })).toLocalDate().toEpochDay()
+            }
+
+            val daily = json.optJSONObject("daily")
+            val dailyList = parseDaily(daily, todayEpochDay)
+
+            WeatherResult.Success(
+                WeatherData(
+                    temperature = temp,
+                    condition = describeCode(code, isDay),
+                    image = iconForCode(code, isDay),
+                    latitude = lat,
+                    longitude = lon,
+                    // Reverse-geocoded place name is resolved by the repository via Android's
+                    // Geocoder; Open-Meteo does not need to be asked again for it.
+                    place = placeOverride ?: "",
+                    time = System.currentTimeMillis(),
+                    source = WeatherSource.OPEN_METEO,
+                    link = "https://open-meteo.com/",
+                    timezone = timezoneId.ifEmpty { null },
+                    daily = dailyList
+                )
+            )
+        } catch (e: Exception) {
+            WeatherResult.Failure("Malformed weather response", e)
+        }
+    }
+
+    /**
+     * Map the daily block into [DailyForecast] entries starting today. Missing provider
+     * fields stay null — the UI must not invent them.
+     */
+    internal fun parseDaily(daily: JSONObject?, todayEpochDay: Long): List<DailyForecast> {
+        if (daily == null) return emptyList()
+        val dates = daily.optJSONArray("time") ?: return emptyList()
+        val highs = daily.optJSONArray("temperature_2m_max")
+        val lows = daily.optJSONArray("temperature_2m_min")
+        val codes = daily.optJSONArray("weather_code")
+        val precip = daily.optJSONArray("precipitation_probability_max")
+        val out = ArrayList<DailyForecast>(dates.length())
+        for (i in 0 until dates.length()) {
+            val epochDay = try {
+                java.time.LocalDate.parse(dates.getString(i)).toEpochDay()
+            } catch (e: Exception) {
+                todayEpochDay + i
+            }
+            // Skip days before today (defensive; Open-Meteo starts at today).
+            if (epochDay < todayEpochDay) continue
+            val code = codes?.optInt(i, 0) ?: 0
+            val hasDayNight = true
+            out.add(
+                DailyForecast(
+                    epochDay = epochDay,
+                    highC = highs?.takeIf { !it.isNull(i) }?.getDouble(i),
+                    lowC = lows?.takeIf { !it.isNull(i) }?.getDouble(i),
+                    image = iconForCode(code, hasDayNight),
+                    condition = describeCode(code, hasDayNight),
+                    precipProbability = precip?.takeIf { !it.isNull(i) }?.getInt(i)
+                )
+            )
+        }
+        return out.take(7)
+    }
+
+    private fun httpError(e: Http.HttpStatusException): WeatherResult = when {
+        e.code == 429 -> WeatherResult.ApiError("Rate limited by Open-Meteo. Try again shortly.", e.code)
+        e.code >= 500 -> WeatherResult.ApiError("Open-Meteo server error (${e.code}).", e.code)
+        e.code == 400 -> WeatherResult.ApiError("Open-Meteo rejected the request (${e.code}).", e.code)
+        else -> WeatherResult.ApiError("Open-Meteo error (${e.code}).", e.code)
+    }
+
+    // ---- WMO code → OWM-style icon + English description ---------------------
+
+    internal fun iconForCode(code: Int, isDay: Boolean): String {
+        val base = when (code) {
+            0 -> "01"                       // clear sky
+            1 -> "02"                       // mainly clear
+            2 -> "03"                       // partly cloudy
+            3 -> "04"                       // overcast
+            45, 48 -> "50"                  // fog, rime fog
+            51, 53, 55 -> "09"              // drizzle
+            56, 57 -> "09"                  // freezing drizzle
+            61, 63, 65 -> "10"              // rain
+            66, 67 -> "10"                  // freezing rain
+            71, 73, 75, 77 -> "13"          // snow
+            80, 81, 82 -> "09"              // rain showers
+            85, 86 -> "13"                  // snow showers
+            95 -> "11"                      // thunderstorm
+            96, 99 -> "11"                  // thunderstorm w/ hail
+            else -> if (isDay) "01" else "01n".removeSuffix("n").plus(if (isDay) "" else "")
+        }
+        val suffix = when (base) {
+            "01", "02", "09", "10", "11", "13", "50" -> if (isDay) "d" else "n"
+            else -> if (isDay) "d" else "n"
+        }
+        return base + suffix
+    }
+
+    internal fun describeCode(code: Int, isDay: Boolean): String = when (code) {
+        0 -> if (isDay) "Sky Is Clear" else "Clear Night"
+        1 -> "Mainly Clear"
+        2 -> "Partly Cloudy"
+        3 -> "Overcast"
+        45 -> "Fog"
+        48 -> "Depositing Rime Fog"
+        51 -> "Light Drizzle"
+        53 -> "Moderate Drizzle"
+        55 -> "Dense Drizzle"
+        56 -> "Light Freezing Drizzle"
+        57 -> "Dense Freezing Drizzle"
+        61 -> "Slight Rain"
+        63 -> "Moderate Rain"
+        65 -> "Heavy Rain"
+        66 -> "Light Freezing Rain"
+        67 -> "Heavy Freezing Rain"
+        71 -> "Slight Snowfall"
+        73 -> "Moderate Snowfall"
+        75 -> "Heavy Snowfall"
+        77 -> "Snow Grains"
+        80 -> "Slight Rain Showers"
+        81 -> "Moderate Rain Showers"
+        82 -> "Violent Rain Showers"
+        85 -> "Slight Snow Showers"
+        86 -> "Heavy Snow Showers"
+        95 -> "Thunderstorm"
+        96 -> "Thunderstorm With Slight Hail"
+        99 -> "Thunderstorm With Heavy Hail"
+        else -> "Unknown"
+    }
+}
++Thought · 3.4s
+Let me fix a convoluted branch I left in iconForCode:
+← EditWeatherDoge-modern/WeatherDoge/src/main/java/com/versobit/weatherdoge/provider/OpenMeteoProvider.kt
+            80, 81, 82 -> "09"              // rain showers            80, 81, 82 -> "09"              // rain showers
+            85, 86 -> "13"                  // snow showers            85, 86 -> "13"                  // snow showers
+            95 -> "11"                      // thunderstorm            95 -> "11"                      // thunderstorm
+            96, 99 -> "11"                  // thunderstorm w/ hail            96, 99 -> "11"                  // thunderstorm w/ hail
+            else -> if (isDay) "01" else "01n".removeSuffix("n").plus(if (isDay) "" else "")            else -> "01"
+        }
+        val suffix = when (base) {        }
+            "01", "02", "09", "10", "11", "13", "50" -> if (isDay) "d" else "n"        val suffix = if (isDay) "d" else "n"
+            else -> if (isDay) "d" else "n"
+        }
+        return base + suffix
+    }
+        return base + suffix
+    internal fun describeCode(code: Int, isDay: Boolean): String = when (code) {    }
+
+    internal fun describeCode(code: Int, isDay: Boolean): String = when (code) {
++Thought · 27.0s
+Now the OpenWeatherMap provider (preserving existing functionality, issue #6/#10):
+# WroteWeatherDoge-modern/WeatherDoge/src/main/java/com/versobit/weatherdoge/provider/OpenWeatherMapProvider.kt
+/*
+ * Copyright (C) 2026 Weather Doge contributors
+ *
+ * This file is part of Weather Doge.
+ *
+ * Weather Doge is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Weather Doge is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Weather Doge.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package com.versobit.weatherdoge.provider
+
+import com.versobit.weatherdoge.data.DailyForecast
+import com.versobit.weatherdoge.data.WeatherData
+import com.versobit.weatherdoge.data.WeatherResult
+import com.versobit.weatherdoge.data.WeatherSource
+import org.json.JSONObject
+import java.net.URLEncoder
+import java.time.Instant
+import java.time.ZoneId
+import java.util.Locale
+
+/**
+ * OpenWeatherMap integration — the app's original provider, preserved.
+ *
+ * API key resolution order (never committed to source, never logged):
+ *  1. User-entered key in app settings (works for every build, including F-Droid)
+ *  2. BuildConfig.OWM_APPID from local.properties (developer convenience)
+ * A missing/empty key is reported as an actionable error instead of failing opaquely,
+ * which is the root cause of upstream issue #6 ("dunno, seriously dunno").
+ *
+ * Current conditions come from /data/2.5/weather (unchanged from the original app).
+ * The 7-day forecast comes from /data/2.5/forecast aggregated into local days; OWM's free
+ * tier only returns 5 days, so at most 5 DailyForecast entries are produced — the UI must
+ * show what exists rather than invent the rest.
+ */
+class OpenWeatherMapProvider(
+    private val apiKeyProvider: () -> String,
+    private val http: (String) -> Http.Response = { Http.get(it) }
+) {
+
+    companion object {
+        private const val CURRENT_URL = "https://api.openweathermap.org/data/2.5/weather"
+        private const val FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast"
+    }
+
+    fun fetch(latitude: Double, longitude: Double): WeatherResult {
+        val key = requireKey() ?: return keyMissing()
+        val q = "lat=${enc(String.format(Locale.US, "%.6f", latitude))}" +
+                "&lon=${enc(String.format(Locale.US, "%.6f", longitude))}"
+        return fetchAll(q, latitude, longitude, key, placeOverride = null)
+    }
+
+    fun fetch(location: String): WeatherResult {
+        val key = requireKey() ?: return keyMissing()
+        if (location.isBlank()) return WeatherResult.ApiError("No location provided.")
+        val q = "q=${enc(location.trim())}"
+        return fetchAll(q, latitude = Double.NaN, longitude = Double.NaN, key, placeOverride = null)
+    }
+
+    private fun requireKey(): String? = apiKeyProvider().trim().takeIf { it.isNotEmpty() }
+
+    private fun keyMissing() = WeatherResult.ApiError(
+        "OpenWeatherMap App ID is not set. Use Open-Meteo (no key needed) or add your own " +
+                "key in Options → Weather Source."
+    )
+
+    private fun enc(s: String) = URLEncoder.encode(s, "UTF-8")
+
+    private fun fetchAll(q: String, latitude: Double, longitude: Double, key: String,
+                         placeOverride: String?): WeatherResult {
+        // 1) current conditions
+        val currentUrl = "$CURRENT_URL?$q&APPID=${enc(key)}&units=metric"
+        val body = try {
+            http(currentUrl).body
+        } catch (e: Http.HttpStatusException) {
+            return owmHttpError(e)
+        } catch (e: Exception) {
+            return WeatherResult.Failure(e.message ?: "Network error", e)
+        }
+
+        val current = try {
+            parseCurrent(body, latitude, longitude, placeOverride)
+        } catch (e: Exception) {
+            return WeatherResult.Failure("Malformed OpenWeatherMap response", e)
+        }
+        if (current is WeatherResult) return current
+        val data = (current as WeatherData)
+
+        // 2) forecast (best effort — a forecast failure must not discard good current data)
+        val daily = try {
+            val fUrl = "$FORECAST_URL?$q&APPID=${enc(key)}&units=metric"
+            val fBody = http(fUrl).body
+            parseForecast(JSONObject(fBody), data.timezone)
+        } catch (e: Exception) {
+            emptyList()
+        }
+
+        return WeatherResult.Success(data.copy(daily = daily, time = System.currentTimeMillis()))
+    }
+
+    /** Returns either parsed data or an error result. */
+    private fun parseCurrent(body: String, latitude: Double, longitude: Double,
+                             placeOverride: String?): Any {
+        val json = JSONObject(body)
+        val cod = json.optInt("cod", 200)
+        if (cod != 200) {
+            return WeatherResult.ApiError(
+                "$cod: ${json.optString("message", "unknown error")}", cod
+            )
+        }
+
+        val weather = json.getJSONArray("weather").getJSONObject(0)
+        val main = json.getJSONObject("main")
+
+        val tempC = main.getDouble("temp") // units=metric
+        val condition = prettyCondition(weather.getString("description"))
+        val icon = weather.getString("icon")
+
+        val place = placeOverride
+            ?: json.optString("name", "")
+        val timezoneOffset = json.optLong("timezone", 0L)
+        val zone = ZoneId.ofOffset("UTC", java.time.ZoneOffset.ofTotalSeconds(timezoneOffset.toInt()))
+        val link = "https://openweathermap.org/city/" + json.optInt("id", 0)
+        val lat = if (latitude.isNaN()) json.optDouble("lat", 0.0) else latitude
+        val lon = if (longitude.isNaN()) json.optDouble("lon", 0.0) else longitude
+
+        return WeatherData(
+            temperature = tempC,
+            condition = condition,
+            image = icon,
+            latitude = lat,
+            longitude = lon,
+            place = place,
+            time = System.currentTimeMillis(),
+            source = WeatherSource.OPEN_WEATHER_MAP,
+            link = if (link.endsWith("/0")) null else link,
+            timezone = zone.id,
+            daily = emptyList() // filled by parseForecast
+        )
+    }
+
+    /**
+     * Turn OWM's 3-hour steps into whole local days (high/low/dominant condition/
+     * max precipitation). Days are computed in the location's timezone so day boundaries
+     * and DST follow the user's local time, not UTC.
+     *
+     * @param todayEpochDay today in the location's timezone (or 0 to derive from now)
+     */
+    internal fun parseForecast(json: JSONObject, timezoneId: String?, todayEpochDay: Long = 0): List<DailyForecast> {
+        val list = json.optJSONArray("list") ?: return emptyList()
+        val zone = try {
+            ZoneId.of(if (timezoneId.isNullOrBlank()) "UTC" else timezoneId)
+        } catch (e: Exception) {
+            ZoneId.of("UTC")
+        }
+        val today = if (todayEpochDay != 0L) todayEpochDay else
+            Instant.now().atZone(zone).toLocalDate().toEpochDay()
+
+        // group steps by local day
+        data class Bucket(var high: Double?, var low: Double?, val codes: HashMap<Int, Int>,
+                           var maxPrecip: Int?, val icons: HashMap<String, Int>)
+        val buckets = LinkedHashMap<Long, Bucket>()
+
+        for (i in 0 until list.length()) {
+            val step = list.optJSONObject(i) ?: continue
+            val dt = step.optLong("dt", 0)
+            if (dt <= 0) continue
+            val localDate = Instant.ofEpochSecond(dt).atZone(zone).toLocalDate()
+            val epochDay = localDate.toEpochDay()
+            if (epochDay < today) continue
+            val bucket = buckets.getOrPut(epochDay) {
+                Bucket(null, null, HashMap(), null, HashMap())
+            }
+            val main = step.optJSONObject("main")
+            if (main != null) {
+                val hi = main.optDouble("temp_max", Double.NaN)
+                val lo = main.optDouble("temp_min", Double.NaN)
+                if (!hi.isNaN()) bucket.high = maxOf(bucket.high ?: hi, hi)
+                if (!lo.isNaN()) bucket.low = minOf(bucket.low ?: lo, lo)
+            }
+            val wx = step.optJSONArray("weather")
+            if (wx != null && wx.length() > 0) {
+                val w0 = wx.optJSONObject(0)
+                val icon = w0?.optString("icon") ?: ""
+                if (icon.isNotEmpty()) {
+                    bucket.icons[icon] = (bucket.icons[icon] ?: 0) + 1
+                }
+            }
+            val pop = step.optDouble("pop", -1.0)
+            if (pop >= 0) {
+                val pct = Math.round(pop * 100).toInt()
+                bucket.maxPrecip = maxOf(bucket.maxPrecip ?: pct, pct)
+            }
+        }
+
+        return buckets.entries.take(7).map { (epochDay, b) ->
+            // Dominant icon of the day (most frequent 3h condition).
+            val icon = b.icons.entries.maxByOrNull { it.value }?.key ?: "01d"
+            val codeCount = b.codes
+            DailyForecast(
+                epochDay = epochDay,
+                highC = b.high,
+                lowC = b.low,
+                image = icon,
+                condition = prettyCondition(conditionFromIcon(icon)),
+                precipProbability = b.maxPrecip
+            )
+        }
+    }
+
+    private fun owmHttpError(e: Http.HttpStatusException): WeatherResult = when (e.code) {
+        401 -> WeatherResult.ApiError("OpenWeatherMap rejected the API key (401).", 401)
+        429 -> WeatherResult.ApiError("OpenWeatherMap rate limit reached (429).", 429)
+        404 -> WeatherResult.ApiError("Location not found (404).", 404)
+        else -> WeatherResult.ApiError("OpenWeatherMap error (${e.code}).", e.code)
+    }
+
+    private fun prettyCondition(raw: String): String {
+        val t = raw.trim().replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() }
+        // "Sky Is Clear" -> "Sky is Clear"
+        return t.replace(Regex("(?<=[^\\w])Is(?=[^\\w])"), "is")
+    }
+
+    /** Rough reverse mapping used only for forecast days, where OWM sends icons not text. */
+    private fun conditionFromIcon(icon: String): String = when (icon.substringBefore('d').substringBefore('n')) {
+        "01" -> "Sky Is Clear"
+        "02" -> "Few Clouds"
+        "03" -> "Scattered Clouds"
+        "04" -> "Overcast Clouds"
+        "09" -> "Shower Rain"
+        "10" -> "Rain"
+        "11" -> "Thunderstorm"
+        "13" -> "Snow"
+        "50" -> "Mist"
+        else -> "Unknown"
+    }
+}
++Thought · 7.1s
+The parseCurrent return type handling is clunky — let me clean it up properly:
+← EditWeatherDoge-modern/WeatherDoge/src/main/java/com/versobit/weatherdoge/provider/OpenWeatherMapProvider.kt
+        } catch (e: Exception) {        } catch (e: Exception) {
+            return WeatherResult.Failure(e.message ?: "Network error", e)            return WeatherResult.Failure(e.message ?: "Network error", e)
+        }        }
+
+        val current = try {        val data = when (val parsed = parseCurrent(body, latitude, longitude, placeOverride)) {
+            is WeatherResult -> return parsed
+            parseCurrent(body, latitude, longitude, placeOverride)
+        } catch (e: Exception) {            is WeatherData -> parsed
+            return WeatherResult.Failure("Malformed OpenWeatherMap response", e)            else -> return WeatherResult.Failure("Malformed OpenWeatherMap response")
+        }        }
+        if (current is WeatherResult) return current
+        val data = (current as WeatherData)
+
+        // 2) forecast (best effort — a forecast failure must not discard good current data)        // 2) forecast (best effort — a forecast failure must not discard good current data)
+        val daily = try {        val daily = try {
+            val fUrl = "$FORECAST_URL?$q&APPID=${enc(key)}&units=metric"            val fUrl = "$FORECAST_URL?$q&APPID=${enc(key)}&units=metric"
+ @@ -109,9 +107,9 @@
+    }    }
+
+    /** Returns either parsed data or an error result. */    /** Returns either parsed data or an error result. */
+    private fun parseCurrent(body: String, latitude: Double, longitude: Double,    private fun parseCurrent(body: String, latitude: Double, longitude: Double,
+                             placeOverride: String?): Any {                             placeOverride: String): Any {
+        val json = JSONObject(body)        val json = JSONObject(body)
+        val cod = json.optInt("cod", 200)        val cod = json.optInt("cod", 200)
+        if (cod != 200) {        if (cod != 200) {
+            return WeatherResult.ApiError(            return WeatherResult.ApiError(
+but ONLY THOSE SOUNDS I HAVE
++Thought · 1m 37s
+Confirmed and locked in: in your build, the only sounds that ever play are your six files. I'm enforcing it structurally — sound slot names now match your filenames exactly, so your files always win, and I'm removing my unused extras (menu blips, chimes, sparkle, separate chaos track) so there is zero chance you hear one of my sounds over yours:
+$ cd /home/ansh/WeatherDoge-modern/WeatherDoge/src/main/assets/sounds && rm -f wii_blip.wav wii_done.wav wow_chime.wav sparkle.wav chaos_wii_style_loop.wav keyboard_cat_riff.wav mlg_air_horn.wav bg_loop.wav && cp ../../../../../g…
+(11 earlier lines)
+bg_music.aac
+bonk.mp3
+keyboard_cat.mp3
+meow.mp3
+nyan.mp4
+README.txt
++Thought · 14.6s
+One more critical thing you just made me catch: chaos_music.wav (my track) had no counterpart in your files — it would have played during chaos in your build. Your instruction is "take the music off until it goes back to normal" — so chaos plays no music at all, only your SFX. Deleting my chaos track:
+$ cd /home/ansh/WeatherDoge-modern && rm -f WeatherDoge/src/main/assets/sounds/chaos_music.wav && ls WeatherDoge/src/main/assets/sounds/ && echo "--- final built-ins (all shadowed by your identically-named files) ---"
+airhorn.wav
+bg_music.wav
+bonk.wav
+keyboard_cat.wav
+meow.wav
+--- final built-ins (all shadowed by your identically-named files) ---
++Thought · 32.2s
+Now updating the SoundManager to match the final exact slot set (removing references to the deleted sounds):
+# WroteWeatherDoge-modern/WeatherDoge/src/main/java/com/versobit/weatherdoge/ui/sound/SoundManager.kt
+/*
+ * Copyright (C) 2026 Weather Doge contributors
+ *
+ * This file is part of Weather Doge.
+ *
+ * Weather Doge is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Weather Doge is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Weather Doge.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package com.versobit.weatherdoge.ui.sound
+
+import android.content.Context
+import android.content.SharedPreferences
+import android.content.res.AssetFileDescriptor
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
+import android.media.MediaPlayer
+import android.media.SoundPool
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.preference.PreferenceManager
+import android.util.Log
+import java.io.IOException
+
+/**
+ * Central audio service. Owns every sound the app can make.
+ *
+ * == Exact slot set (by design, per product decision) ==
+ *  BONK        - every UI tap AND touching the doge
+ *  BG_MUSIC    - background music loop; auto-pauses during CHAOS MODE, resumes after
+ *  KEYBOARD_CAT- CHAOS MODE only
+ *  MEOW        - CHAOS MODE only
+ *  AIRHORN     - CHAOS MODE + dedicated airhorn button
+ * There is deliberately NO chaos music track: during chaos the normal music stops and
+ * only SFX play. Nothing else ever plays.
+ *
+ * Slot resolution: each slot's asset name matches the local-extras override filenames
+ * exactly. A user-provided file (.mp3/.aac/.m4a/.ogg in the git-ignored local-extras
+ * source set) shadows the built-in original (.wav) with the same base name — so a local
+ * build plays ONLY the user's files, while published builds play only the originals.
+ *
+ * Rules enforced here:
+ *  - No autoplay on launch: background music starts only when explicitly requested.
+ *  - Master mute + independent music/SFX toggles + dedicated bonk toggle.
+ *  - Audio focus is requested for music and abandoned when it stops.
+ *  - Nothing keeps playing after cancellation or when the app pauses.
+ */
+class SoundManager(context: Context) {
+
+    enum class Slot(val assetName: String) {
+        BONK("bonk"),
+        BG_MUSIC("bg_music"),
+        KEYBOARD_CAT("keyboard_cat"),
+        MEOW("meow"),
+        AIRHORN("airhorn");
+
+        /** User-provided extensions first so they always shadow the built-in wav. */
+        val extensions: List<String> = listOf("mp3", "m4a", "ogg", "aac", "wav")
+    }
+
+    companion object {
+        private const val TAG = "SoundManager"
+        private const val SOUND_DIR = "sounds"
+
+        const val PREF_MASTER_MUTE = "pref_sound_master_mute"
+        const val PREF_MUSIC_ENABLED = "pref_sound_music"
+        const val PREF_SFX_ENABLED = "pref_sound_sfx"
+        const val PREF_BONK_ENABLED = "pref_sound_bonk"
+    }
+
+    private val appContext = context.applicationContext
+    private val prefs: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(appContext)
+    private val audioManager = appContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    private var soundPool: SoundPool? = null
+    private val soundIds = HashMap<Slot, Int>()
+    private val loaded = HashSet<Slot>()
+
+    private var musicPlayer: MediaPlayer? = null
+    private var musicSlot: Slot? = null
+
+    private var focusRequest: AudioFocusRequest? = null
+    private var focusListener: AudioManager.OnAudioFocusChangeListener? = null
+
+    var isMusicPlaying: Boolean = false
+        private set
+    /** True while bg music is intentionally paused (CHAOS MODE) rather than stopped. */
+    private var musicPausedForChaos = false
+
+    // ---- settings ------------------------------------------------------------
+
+    val masterMute: Boolean get() = prefs.getBoolean(PREF_MASTER_MUTE, false)
+    val musicEnabled: Boolean get() = prefs.getBoolean(PREF_MUSIC_ENABLED, true)
+    val sfxEnabled: Boolean get() = prefs.getBoolean(PREF_SFX_ENABLED, true)
+    val bonkEnabled: Boolean get() = prefs.getBoolean(PREF_BONK_ENABLED, true)
+
+    // ---- lifecycle -----------------------------------------------------------
+
+    init {
+        val attrs = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_GAME)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+        soundPool = SoundPool.Builder().setMaxStreams(5).setAudioAttributes(attrs).build()
+        soundPool!!.setOnLoadCompleteListener { _, sampleId, _ ->
+            synchronized(loaded) {
+                SoundManager::class // marker to keep kdoc happy
+                soundIds.entries.firstOrNull { it.value == sampleId }?.let { loaded.add(it.key) }
+            }
+        }
+        Slot.entries.forEach { resolveAndLoad(it) }
+    }
+
+    /** Release everything. Call when the app/process is going away. */
+    fun release() {
+        stopMusic()
+        soundPool?.release()
+        soundPool = null
+        soundIds.clear()
+        loaded.clear()
+    }
+
+    // ---- slot resolution -----------------------------------------------------
+
+    /**
+     * Actual asset path for a slot, e.g. "sounds/bonk.mp3" when the user provided an
+     * override, "sounds/bonk.wav" when only the built-in original exists, or null.
+     */
+    fun resolveAsset(slot: Slot): String? {
+        for (ext in slot.extensions) {
+            val candidate = "$SOUND_DIR/${slot.assetName}.$ext"
+            if (assetExists(candidate)) return candidate
+        }
+        return null
+    }
+
+    private fun assetExists(path: String): Boolean = try {
+        appContext.assets.open(path).close()
+        true
+    } catch (e: IOException) {
+        false
+    }
+
+    private fun resolveAndLoad(slot: Slot) {
+        val path = resolveAsset(slot) ?: return
+        try {
+            val afd: AssetFileDescriptor = appContext.assets.openFd(path)
+            val id = soundPool?.load(afd, 1) ?: return
+            soundIds[slot] = id
+            afd.close()
+        } catch (e: IOException) {
+            Log.w(TAG, "Cannot load sound $path", e)
+        }
+    }
+
+    // ---- one-shot SFX --------------------------------------------------------
+
+    /**
+     * Play a short sound effect if SFX are enabled and not globally muted.
+     * Safe to call from any thread; playback is dispatched internally by SoundPool.
+     */
+    fun play(slot: Slot, volume: Float = 1f) {
+        if (masterMute || !sfxEnabled) return
+        if (slot == Slot.BONK && !bonkEnabled) return
+        val id = soundIds[slot] ?: return
+        soundPool?.play(id, volume, volume, 1, 0, 1f)
+    }
+
+    /** The bonk doubles as the UI tap sound and the doge touch sound. */
+    fun playBonk() = play(Slot.BONK)
+
+    // ---- background music ----------------------------------------------------
+
+    /**
+     * Start (or restart) the looping background music. Requests audio focus.
+     * Never called on launch — only by explicit user-driven triggers.
+     */
+    @Synchronized
+    fun startMusic() {
+        if (masterMute || !musicEnabled) return
+        val path = resolveAsset(Slot.BG_MUSIC) ?: run {
+            Log.w(TAG, "No background music asset found"); return
+        }
+        if (musicPlayer != null && musicSlot == Slot.BG_MUSIC) {
+            // Already have it; just make sure it's rolling.
+            resumeMusic()
+            return
+        }
+        stopMusicInternal()
+        try {
+            val afd = appContext.assets.openFd(path)
+            val player = MediaPlayer()
+            player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+            afd.close()
+            player.isLooping = true
+            player.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build()
+            )
+            player.setOnPreparedListener {
+                if (requestFocus()) {
+                    it.start()
+                    isMusicPlaying = true
+                    musicSlot = Slot.BG_MUSIC
+                    musicPlayer = it
+                    musicPausedForChaos = false
+                } else {
+                    it.release()
+                    if (musicPlayer === it) musicPlayer = null
+                }
+            }
+            player.setOnErrorListener { mp, what, extra ->
+                Log.w(TAG, "MediaPlayer error what=$what extra=$extra")
+                mp.release()
+                if (musicPlayer === mp) musicPlayer = null
+                isMusicPlaying = false
+                true
+            }
+            musicPlayer = player
+            player.prepareAsync()
+        } catch (e: IOException) {
+            Log.w(TAG, "Cannot start background music", e)
+        }
+    }
+
+    /**
+     * Pause the background music because CHAOS MODE started. Remembers the position so
+     * [resumeMusicAfterChaos] restores the exact same spot.
+     */
+    @Synchronized
+    fun pauseMusicForChaos() {
+        val p = musicPlayer ?: return
+        try {
+            if (p.isPlaying) {
+                p.pause()
+                isMusicPlaying = false
+                musicPausedForChaos = true
+            }
+        } catch (e: IllegalStateException) {
+            Log.w(TAG, "pauseMusicForChaos failed", e)
+        }
+    }
+
+    /** CHAOS MODE finished: restore the background music where it left off. */
+    @Synchronized
+    fun resumeMusicAfterChaos() {
+        if (!musicPausedForChaos) return
+        musicPausedForChaos = false
+        if (masterMute || !musicEnabled) return
+        val p = musicPlayer ?: return
+        try {
+            if (!p.isPlaying) {
+                if (requestFocus()) {
+                    p.start()
+                    isMusicPlaying = true
+                }
+            }
+        } catch (e: IllegalStateException) {
+            Log.w(TAG, "resumeMusicAfterChaos failed", e)
+        }
+    }
+
+    /** Toggle pause/resume for the settings preview button. */
+    @Synchronized
+    fun resumeMusic() {
+        if (masterMute || !musicEnabled) return
+        val p = musicPlayer ?: return
+        try {
+            if (!p.isPlaying && requestFocus()) {
+                p.start()
+                isMusicPlaying = true
+            }
+        } catch (e: IllegalStateException) { /* already released */ }
+    }
+
+    /** Stop music entirely (leaving the app, explicit stop). Abandons audio focus. */
+    @Synchronized
+    fun stopMusic() {
+        musicPausedForChaos = false
+        stopMusicInternal()
+        abandonFocus()
+    }
+
+    private fun stopMusicInternal() {
+        val p = musicPlayer
+        musicPlayer = null
+        isMusicPlaying = false
+        musicSlot = null
+        if (p != null) {
+            try {
+                if (p.isPlaying) p.stop()
+            } catch (e: IllegalStateException) { /* already gone */ }
+            p.release()
+        }
+    }
+
+    fun hasBackgroundMusic(): Boolean = musicPlayer != null
+
+    // ---- audio focus ---------------------------------------------------------
+
+    private fun onAudioFocusChanged(change: Int) {
+        when (change) {
+            AudioManager.AUDIOFOCUS_LOSS,
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT,
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                // Another app wants the audio: pause cleanly, never fight over focus.
+                musicPlayer?.let { p ->
+                    try {
+                        if (p.isPlaying) p.pause()
+                    } catch (e: IllegalStateException) { }
+                }
+                isMusicPlaying = false
+            }
+            AudioManager.AUDIOFOCUS_GAIN -> {
+                val p = musicPlayer ?: return
+                try {
+                    if (!p.isPlaying && musicEnabled && !masterMute && !musicPausedForChaos) {
+                        p.start()
+                        isMusicPlaying = true
+                    }
+                } catch (e: IllegalStateException) { }
+            }
+        }
+    }
+
+    private fun requestFocus(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val l = focusListener
+                ?: AudioManager.OnAudioFocusChangeListener { onAudioFocusChanged(it) }
+                    .also { focusListener = it }
+            val req = focusRequest ?: AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build()
+                )
+                .setWillPauseWhenDucked(false)
+                .setOnAudioFocusChangeListener(l)
+                .build().also { focusRequest = it }
+            return audioManager.requestAudioFocus(req) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+        }
+        @Suppress("DEPRECATION")
+        return audioManager.requestAudioFocus(
+            { onAudioFocusChanged(it) },
+            AudioManager.STREAM_MUSIC,
+            AudioManager.AUDIOFOCUS_GAIN
+        ) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+    }
+
+    private fun abandonFocus() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            focusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+        } else {
+            @Suppress("DEPRECATION")
+            audioManager.abandonAudioFocus(null)
+        }
+        // Focus teardown is async; keep a no-op reference so the handler isn't GC'd mid-post.
+        mainHandler.postDelayed({ Log.v(TAG, "focus abandoned") }, 80)
+    }
+}
++Thought · 2.0s
+Removing a stray line I left in the init block:
+← EditWeatherDoge-modern/WeatherDoge/src/main/java/com/versobit/weatherdoge/ui/sound/SoundManager.kt
+            .build()            .build()
+        soundPool = SoundPool.Builder().setMaxStreams(5).setAudioAttributes(attrs).build()        soundPool = SoundPool.Builder().setMaxStreams(5).setAudioAttributes(attrs).build()
+        soundPool!!.setOnLoadCompleteListener { _, sampleId, _ ->        soundPool!!.setOnLoadCompleteListener { _, sampleId, _ ->
+            synchronized(loaded) {            synchronized(loaded) {
+                SoundManager::class // marker to keep kdoc happy
+                soundIds.entries.firstOrNull { it.value == sampleId }?.let { loaded.add(it.key) }
+            }                soundIds.entries.firstOrNull { it.value == sampleId }?.let { loaded.add(it.key) }
+        }            }
+        Slot.entries.forEach { resolveAndLoad(it) }        }
+        Slot.entries.forEach { resolveAndLoad(it) }
++Thought · 6.6s
+Sound system finalized exactly as you specified:
+What	Your build plays	File in your build
+Tap + doge touch	your bonk	BONK!.mp3 → local-extras/bonk.mp3
+Background music (loops, pauses during chaos, resumes after)	your frutiger mix	frutigermusic.aac → local-extras/bg_music.aac
+Chaos: keyboard cat	your keyboard cat	cat on keyboard.mp3 → local-extras/keyboard_cat.mp3
+Chaos: meow	your meow	meow cat.mp3 → local-extras/meow.mp3
+Chaos + airhorn button	your MLG horn	MLG.mp3 → local-extras/airhorn.mp3
+NYAN tab video	your nyan mp4	meow cat.mp4 → local-extras/nyan.mp4
+Nothing else can play — I deleted every other sound from the app (no blips, no chimes, no my-chaos-track). The only built-ins left are 5 .wav fallbacks with the identical base names as your files, so yours always win; a published build (no local-extras) plays those originals. Chaos mode plays no music per your "take the music off until it goes back to normal".
+Continuing with the rest of the implementation now (repository/cache → location → widget → MainActivity/Doge Dial/forecast → CHAOS MODE → NYAN tab → settings+credits → tests → build → publish v1.0.0-beta).
+Build · MiMo-V2.6-Flash Free · 9m 23s · 57.1 tok/s
+SO ALL DONE NOW DO THE STEPS
++Thought · 3m 47s
+Now executing the full remaining implementation. Batch 1 — repository/cache (fixes #6), location (fixes #8), background worker:
+# WroteWeatherDoge-modern/WeatherDoge/src/main/java/com/versobit/weatherdoge/data/WeatherRepository.kt
+/*
+ * Copyright (C) 2026 Weather Doge contributors
+ *
+ * Weather Doge is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * Weather Doge is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+package com.versobit.weatherdoge.data
+
+import android.content.Context
+import android.content.SharedPreferences
+import android.location.Geocoder
+import android.os.Handler
+import android.os.Looper
+import android.preference.PreferenceManager
+import android.util.Log
+import com.versobit.weatherdoge.OptionsActivity
+import com.versobit.weatherdoge.provider.Http
+import com.versobit.weatherdoge.provider.OpenMeteoProvider
+import com.versobit.weatherdoge.provider.OpenWeatherMapProvider
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.File
+import java.util.concurrent.Executors
+
+/**
+ * Single source of truth for weather data, shared by the app and the widget.
+ *
+ * Why this exists (upstream #6 / #9):
+ *  - The old cache lived in getCacheDir() which the system may purge at any time, and the
+ *    widget and app each talked to the network independently. Now both sides read/write
+ *    ONE JSON file in filesDir(), which is never auto-purged, and the widget renders
+ *    whatever was last successfully fetched — even when the app is closed or offline.
+ *  - A failed refresh NEVER deletes previously good data.
+ *  - Callers are notified on the main thread whenever new data is persisted so widgets
+ *    update the moment fresh data exists.
+ */
+object WeatherRepository {
+
+    private const val TAG = "WeatherRepository"
+    private const val CACHE_FILE = "weather_data.json"
+    private const val CACHE_MAX_AGE_MS = 10 * 60 * 1000L
+    private const val COORD_FUZZ = 2 // decimal places ≈ 1.1 km
+
+    // persisted location fix for widget/background use (no background permission needed)
+    const val PREF_LAST_LAT = "internal_last_lat"
+    const val PREF_LAST_LON = "internal_last_lon"
+
+    private val io = Executors.newSingleThreadExecutor { r ->
+        Thread(r, "weather-repo").apply { isDaemon = true }
+    }
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    @Volatile private var memory: WeatherData? = null
+    private val listeners = ArrayList<(WeatherData) -> Unit>()
+
+    // ---- providers -----------------------------------------------------------
+
+    private fun openMeteo() = OpenMeteoProvider()
+
+    private fun openWeatherMap(context: Context): OpenWeatherMapProvider {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
+        val userKey = prefs.getString(OptionsActivity.PREF_OW_API_KEY, "") ?: ""
+        val key = if (userKey.isNotBlank()) userKey
+                  else com.versobit.weatherdoge.BuildConfig.OWM_APPID
+        return OpenWeatherMapProvider({ key })
+    }
+
+    private fun providerFor(context: Context, source: WeatherSource) = when (source) {
+        WeatherSource.OPEN_METEO -> Fetcher { lat, lon, place ->
+            if (place == null) openMeteo().fetch(lat, lon) else openMeteo().fetch(place)
+        }
+        WeatherSource.OPEN_WEATHER_MAP -> Fetcher { lat, lon, place ->
+            val p = openWeatherMap(context)
+            if (place == null) p.fetch(lat, lon) else p.fetch(place)
+        }
+    }
+
+    private class Fetcher(val block: (Double, Double, String?) -> WeatherResult)
+
+    // ---- public API ----------------------------------------------------------
+
+    /** Last successfully fetched data of any age, or null. Cheap (memory/disk). */
+    fun current(context: Context): WeatherData? {
+        memory?.let { return it }
+        val loaded = load(context.applicationContext) ?: return null
+        memory = loaded
+        return loaded
+    }
+
+    /** Current data when fresh for the given query, else null (caller decides to refresh). */
+    fun fresh(context: Context, latitude: Double?, longitude: Double?, place: String?): WeatherData? {
+        val data = current(context) ?: return null
+        if (data.time + CACHE_MAX_AGE_MS < System.currentTimeMillis()) return null
+        if (place != null) {
+            if (!data.place.equals(place, ignoreCase = true)) return null
+        } else if (latitude != null && longitude != null) {
+            if (round2(data.latitude) != round2(latitude) || round2(data.longitude) != round2(longitude)) return null
+        }
+        return data
+    }
+
+    /**
+     * Fetch weather, persist on success. On failure the previous cached data is kept
+     * intact. Runs synchronously — call from a background thread.
+     * @param outOfDateHint set when serving potentially stale data so UI can mark it.
+     */
+    fun refresh(
+        context: Context,
+        latitude: Double?,
+        longitude: Double?,
+        place: String?,
+        source: WeatherSource
+    ): WeatherResult {
+        val app = context.applicationContext
+        val fetcher = providerFor(app, source)
+        val result = fetcher.block(
+            latitude ?: 0.0,
+            longitude ?: 0.0,
+            if (latitude == null || longitude == null) place else null
+        )
+        if (result is WeatherResult.Success) {
+            val data = result.data
+            // Fill in a human-readable place name for coordinate queries when possible.
+            val enriched = if (data.place.isBlank() && latitude != null && longitude != null) {
+                data.copy(place = reverseGeocode(app, latitude, longitude) ?: data.place)
+            } else data
+            val normalized = if (enriched.place.isBlank()) enriched.copy(place = place ?: "") else enriched
+            memory = normalized
+            save(app, normalized)
+            rememberLocation(app, normalized)
+            notifyListeners(normalized)
+            return WeatherResult.Success(normalized)
+        }
+        // Failure: keep cache untouched.
+        Log.w(TAG, "refresh failed, cache preserved: $result")
+        return result
+    }
+
+    /** Persist a location fix so the widget can refresh without any location permission. */
+    fun rememberLocation(context: Context, data: WeatherData) {
+        if (data.latitude == 0.0 && data.longitude == 0.0) return
+        prefs(context).edit()
+            .putFloat(PREF_LAST_LAT, data.latitude.toFloat())
+            .putFloat(PREF_LAST_LON, data.longitude.toFloat())
+            .putString("internal_last_place", data.place)
+            .apply()
+    }
+
+    fun lastKnownLocation(context: Context): Pair<Double, Double>? {
+        val p = prefs(context)
+        if (!p.contains(PREF_LAST_LAT)) return null
+        return Pair(p.getFloat(PREF_LAST_LAT, 0f).toDouble(), p.getFloat(PREF_LAST_LON, 0f).toDouble())
+    }
+
+    fun source(context: Context): WeatherSource =
+        WeatherSource.fromKey(prefs(context).getString(OptionsActivity.PREF_WEATHER_SOURCE, WeatherSource.OPEN_METEO.key))
+
+    // ---- listeners (main thread) ---------------------------------------------
+
+    @Synchronized
+    fun addListener(l: (WeatherData) -> Unit) { synchronized(listeners) { listeners.add(l) } }
+
+    @Synchronized
+    fun removeListener(l: (WeatherData) -> Unit) { synchronized(listeners) { listeners.remove(l) } }
+
+    private fun notifyListeners(data: WeatherData) {
+        val snapshot = synchronized(listeners) { ArrayList(listeners) }
+        if (snapshot.isEmpty()) return
+        mainHandler.post { snapshot.forEach { it(data) } }
+    }
+
+    // ---- persistence ---------------------------------------------------------
+
+    private fun prefs(context: Context): SharedPreferences =
+        PreferenceManager.getDefaultSharedPreferences(context)
+
+    private fun file(context: Context) = File(context.filesDir, CACHE_FILE)
+
+    private fun load(context: Context): WeatherData? = try {
+        val f = file(context)
+        if (!f.exists()) null else fromJson(JSONObject(f.readText()))
+    } catch (e: Exception) {
+        Log.w(TAG, "cache load failed", e)
+        null
+    }
+
+    private fun save(context: Context, data: WeatherData) {
+        try {
+            val f = file(context)
+            val tmp = File(context.filesDir, "$CACHE_FILE.tmp")
+            tmp.writeText(toJson(data).toString())
+            if (!tmp.renameTo(f)) {
+                f.delete(); tmp.renameTo(f)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "cache save failed", e)
+        }
+    }
+
+    internal fun toJson(data: WeatherData): JSONObject = JSONObject().apply {
+        put("temperature", data.temperature)
+        put("condition", data.condition)
+        put("image", data.image)
+        put("latitude", data.latitude)
+        put("longitude", data.longitude)
+        put("place", data.place)
+        put("time", data.time)
+        put("source", data.source.key)
+        put("link", data.link ?: JSONObject.NULL)
+        put("timezone", data.timezone ?: JSONObject.NULL)
+        put("daily", JSONArray().apply {
+            data.daily.forEach { d ->
+                put(JSONObject().apply {
+                    put("epochDay", d.epochDay)
+                    put("highC", d.highC ?: JSONObject.NULL)
+                    put("lowC", d.lowC ?: JSONObject.NULL)
+                    put("image", d.image)
+                    put("condition", d.condition)
+                    put("precipProbability", d.precipProbability ?: JSONObject.NULL)
+                })
+            }
+        })
+    }
+
+    internal fun fromJson(json: JSONObject): WeatherData {
+        val dailyArr = json.optJSONArray("daily")
+        val daily = ArrayList<DailyForecast>()
+        if (dailyArr != null) {
+            for (i in 0 until dailyArr.length()) {
+                val d = dailyArr.getJSONObject(i)
+                daily.add(
+                    DailyForecast(
+                        epochDay = d.getLong("epochDay"),
+                        highC = if (d.isNull("highC")) null else d.getDouble("highC"),
+                        lowC = if (d.isNull("lowC")) null else d.getDouble("lowC"),
+                        image = d.getString("image"),
+                        condition = d.getString("condition"),
+                        precipProbability = if (d.isNull("precipProbability")) null else d.getInt("precipProbability")
+                    )
+                )
+            }
+        }
+        return WeatherData(
+            temperature = json.getDouble("temperature"),
+            condition = json.getString("condition"),
+            image = json.getString("image"),
+            latitude = json.getDouble("latitude"),
+            longitude = json.getDouble("longitude"),
+            place = json.getString("place"),
+            time = json.getLong("time"),
+            source = WeatherSource.fromKey(json.getString("source")),
+            link = json.optString("link", "").takeIf { it.isNotEmpty() && it != "null" },
+            timezone = json.optString("timezone", "").takeIf { it.isNotEmpty() && it != "null" },
+            daily = daily
+        )
+    }
+
+    private fun reverseGeocode(context: Context, lat: Double, lon: Double): String? = try {
+        if (!Geocoder.isPresent()) null else run {
+            @Suppress("DEPRECATION")
+            Geocoder(context).getFromLocation(lat, lon, 1)?.firstOrNull()?.locality
+        }
+    } catch (e: Exception) {
+        null
+    }
+
+    private fun round2(v: Double) = Math.round(v * 100.0) / 100.0
+
+    /** Test seam: clear memory between unit tests. */
+    internal fun resetForTests() { memory = null }
+
+    // unused http reference kept out; providers own their transport
+    @Suppress("unused")
+    private val httpGuard: (String) -> Http.Response = { Http.get(it) }
+}
+✗Compaction
+Free usage limit reached. Connect a provider or subscribe to OpenCode Go to keep going, or switch models.
+Switched model to Big Pickle
+keep going
+✗Compaction
+Free usage limit reached. Connect a provider or subscribe to OpenCode Go to keep going, or switch models.
+Switched model to Gemini 3.8 Flash
+keep going
+Continuing: writing the units utility, unified location provider (fixes #8, F-Droid eligible), and background refresh worker (WorkManager, fixes #9):
+# WroteWeatherDoge-modern/WeatherDoge/src/main/java/com/versobit/weatherdoge/util/Units.kt
+/*
+ * Copyright (C) 2014-2026 VersoBit and contributors
+ *
+ * This file is part of Weather Doge.
+ *
+ * Weather Doge is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Weather Doge is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+package com.versobit.weatherdoge.util
+
+import java.util.Locale
+
+/** Locale-driven unit detection (metric vs imperial). */
+object Units {
+
+    enum class System { METRIC, IMPERIAL }
+
+    /** US, Liberia, and Myanmar (Burma) default to imperial. */
+    fun defaultSystem(locale: Locale = Locale.getDefault()): System {
+        val country = locale.country.uppercase(Locale.US)
+        return when (country) {
+            "US", "LR", "MM" -> System.IMPERIAL
+            else -> System.METRIC
+        }
+    }
+
+    /** Convert internal Celsius into display temperature (rounded integer). */
+    fun toDisplay(celsius: Double, forceMetric: Boolean): Int {
+        val useF = defaultSystem() == System.IMPERIAL && !forceMetric
+        val v = if (useF) celsius * 1.8 + 32.0 else celsius
+        return Math.round(v).toInt()
+    }
+
+    fun unitSymbol(forceMetric: Boolean): String {
+        val useF = defaultSystem() == System.IMPERIAL && !forceMetric
+        return if (useF) "°F" else "°C"
+    }
+
+    /** Formats e.g. "-5°" or "72°" — guaranteed no trailing spaces, no fractions. */
+    fun formatShort(celsius: Double, forceMetric: Boolean): String =
+        "${toDisplay(celsius, forceMetric)}°"
+}
+Error: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit.
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 250000, model: gemini-3.8-flash, description: Generate content input tokens per minute limit exceeded on Free Tier. See https://ai.google.dev/gemini-api/docs/rate-limits.
+Please retry in 14.928171555s.
+Build · Gemini 3.8 Flash · 2m 41s
+Switched model to Big Pickle
+keep going
+✗Compaction
+Free usage limit reached. Connect a provider or subscribe to OpenCode Go to keep going, or switch models.
+Build·Big PickleOpenCode
+~

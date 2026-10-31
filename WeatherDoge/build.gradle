@@ -33,6 +33,8 @@ android {
         versionName getVersionDef()[1]
         buildConfigField 'String', 'FLAVOR_PLAY', '"play"'
         buildConfigField 'String', 'FLAVOR_FOSS', '"foss"'
+        buildConfigField 'String', 'OWM_APPID', '""'
+        buildConfigField 'String', 'ACCUWEATHER_KEY', '""'
     }
     packagingOptions {
         resources {
@@ -51,11 +53,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
     buildTypes {
         release {
@@ -85,23 +87,26 @@ dependencies {
 
 // Find and apply the signing file
 // See signing.template.gradle for more information
-Properties localProps = new Properties()
-localProps.load(project.rootProject.file('local.properties').newDataInputStream())
-String signingFile = localProps.getProperty('signing.file')
-if (signingFile != null) {
-    if (new File(signingFile).exists()) {
-        apply from: signingFile
-    } else {
-        throw new InvalidUserDataException('Signing configuration file does not exist: ' +
-                signingFile)
+File localPropsFile = project.rootProject.file('local.properties')
+if (localPropsFile.exists()) {
+    Properties localProps = new Properties()
+    localProps.load(localPropsFile.newDataInputStream())
+    String signingFile = localProps.getProperty('signing.file')
+    if (signingFile != null) {
+        if (new File(signingFile).exists()) {
+            apply from: signingFile
+        } else {
+            throw new InvalidUserDataException('Signing configuration file does not exist: ' +
+                    signingFile)
+        }
     }
 } else {
-    logger.log(LogLevel.WARN, 'WARNING: No signing configuration file defined.')
+    logger.log(LogLevel.WARN, 'WARNING: No local.properties or signing configuration file defined.')
 }
 repositories {
     mavenCentral()
 }
 
 kotlin {
-    jvmToolchain 17
+    jvmToolchain 21
 }

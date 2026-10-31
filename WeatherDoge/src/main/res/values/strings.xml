@@ -105,7 +105,7 @@
 
     <string name="dialog_about_copyright">Copyright © 2025 VersoBit</string>
     <string name="dialog_about_text1">Crafted by the fine shibes over at VersoBit and our wow-worthy open-source collaborators. &#x1f436;</string>
-    <string name="dialog_about_text2">Based on dogeweather.com.</string>
+    <string name="dialog_about_text2">Based on dogeweather.com.\n\nSound &amp; Inspiration Credits:\n• Nintendo\n• Nyan Cat\n• Keyboard Cat\n• QuickSounds</string>
     <string name="dialog_about_privacy">Privacy Policy</string>
     <string name="dialog_about_privacy_url">https://versobit.com/weather-doge-privacy-policy</string>
 

@@ -191,6 +191,7 @@ final public class MainActivity extends Activity implements LocationReceiver,
         suchTemp = (TextView)findViewById(R.id.main_suchtemp);
         suchDegree = (TextView)findViewById(R.id.main_suchdegree);
         suchLocation = (TextView)findViewById(R.id.main_suchlocation);
+        findViewById(R.id.man_fab_share).setOnClickListener(v -> {
             Intent i = new Intent(Intent.ACTION_SEND);
             i.setType("text/plain");
             if(weatherAdjectives == null) {
@@ -208,6 +209,7 @@ final public class MainActivity extends Activity implements LocationReceiver,
                 i.putExtra(Intent.EXTRA_TEXT, getString(R.string.share_text, WeatherDoge.getDogeism(wows, dogefixes, weatherAdjectives), temp, currentLocation));
             }
             startActivity(Intent.createChooser(i, getString(R.string.action_share)));
+        });
         findViewById(R.id.man_fab_options).setOnClickListener(v -> {
             startActivity(new Intent(MainActivity.this, OptionsActivity.class));
         });

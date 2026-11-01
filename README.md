@@ -34,3 +34,55 @@ The VersoBit logo is Copyright © 2026 [VersoBit](https://versobit.com). All Rig
 Have fun!
 
 --
+
+---
+
+## 📁 Project Files
+
+```text
+WeatherDoge-modern/
+├── .gitignore
+├── build.gradle
+├── gradle/
+├── gradle.properties
+├── gradlew
+├── gradlew.bat
+├── images/
+│   ├── BelAir.png
+│   ├── BelAirSnow.png
+│   ├── Calgary.png
+│   ├── DialogAbout.png
+│   ├── DialogContribute.png
+│   ├── DialogOtherShibes.png
+│   ├── DialogRefreshInterval.png
+│   ├── DialogShadow.png
+│   ├── DialogWeatherSource.png
+│   ├── Nexus5XBelAir.png
+│   ├── Nexus5XBelAirSnow.png
+│   ├── Nexus5XCalgary.png
+│   ├── SuchOptions.png
+│   ├── Widget.png
+│   ├── WidgetNeue.png
+├── LeonidsLib/
+│   ├── .gitignore
+│   ├── build.gradle.kts
+│   ├── consumer-rules.pro
+│   ├── LICENSE
+│   ├── proguard-rules.pro
+│   ├── src/
+│   │   ├── main/
+├── LICENSE
+├── metadata.json
+├── public/
+├── README.md
+├── settings.gradle
+├── signing.template.gradle
+├── WeatherDoge/
+│   ├── build.gradle
+│   ├── proguard-rules.txt
+│   ├── src/
+│   │   ├── foss/
+│   │   ├── main/
+│   │   ├── play/
+│   ├── versionDef.txt
+```

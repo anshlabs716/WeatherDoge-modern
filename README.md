@@ -44,76 +44,9 @@ WeatherDoge-modern/
 ├── .gitignore
 ├── build.gradle
 ├── gradle/
-├── gradle.properties
-├── gradlew
-├── gradlew.bat
-├── images/
-│   ├── BelAir.png
-│   ├── BelAirSnow.png
-│   ├── Calgary.png
-│   ├── DialogAbout.png
-│   ├── DialogContribute.png
-│   ├── DialogOtherShibes.png
-│   ├── DialogRefreshInterval.png
-│   ├── DialogShadow.png
-│   ├── DialogWeatherSource.png
-│   ├── Nexus5XBelAir.png
-│   ├── Nexus5XBelAirSnow.png
-│   ├── Nexus5XCalgary.png
-│   ├── SuchOptions.png
-│   ├── Widget.png
-│   ├── WidgetNeue.png
-├── LeonidsLib/
-│   ├── .gitignore
-│   ├── build.gradle.kts
-│   ├── consumer-rules.pro
-│   ├── LICENSE
-│   ├── proguard-rules.pro
-│   ├── src/
-│   │   ├── main/
-├── LICENSE
-├── metadata.json
-├── public/
-├── README.md
-├── settings.gradle
-├── signing.template.gradle
-├── WeatherDoge/
-│   ├── build.gradle
-│   ├── proguard-rules.txt
-│   ├── src/
-│   │   ├── foss/
-│   │   ├── main/
-│   │   ├── play/
-│   ├── versionDef.txt
-```
-
----
-
-## 📁 Project Files
-
-```text
-WeatherDoge-modern/
-├── .gitignore
-├── LICENSE
-├── LeonidsLib/
-│   ├── .gitignore
-│   ├── LICENSE
-│   ├── build.gradle.kts
-│   ├── consumer-rules.pro
-│   ├── proguard-rules.pro
-│   └── src/
-│       └── main/
-├── README.md
-├── WeatherDoge/
-│   ├── build.gradle
-│   ├── proguard-rules.txt
-│   ├── src/
-│   │   ├── foss/
-│   │   ├── main/
-│   │   └── play/
-│   └── versionDef.txt
-├── build.gradle
-├── gradle/
+│   └── wrapper/
+│       ├── gradle-wrapper.jar
+│       └── gradle-wrapper.properties
 ├── gradle.properties
 ├── gradlew
 ├── gradlew.bat
@@ -133,8 +66,31 @@ WeatherDoge-modern/
 │   ├── SuchOptions.png
 │   ├── Widget.png
 │   └── WidgetNeue.png
+├── LeonidsLib/
+│   ├── .gitignore
+│   ├── build.gradle.kts
+│   ├── consumer-rules.pro
+│   ├── LICENSE
+│   ├── proguard-rules.pro
+│   └── src/
+│       └── main/
+├── LICENSE
 ├── metadata.json
 ├── public/
+│   └── assets/
+│       └── aistudio/
+├── README.md
 ├── settings.gradle
-└── signing.template.gradle
+├── signing.template.gradle
+└── WeatherDoge/
+    ├── build.gradle
+    ├── proguard-rules.txt
+    ├── src/
+    │   ├── foss/
+    │   ├── main/
+    │   └── play/
+    └── versionDef.txt
 ```
+
+---
+

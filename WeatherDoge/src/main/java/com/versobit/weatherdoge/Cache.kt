@@ -45,6 +45,7 @@ object Cache {
             },
             link = data.link
         )
+        WeatherRepository.save(ctx, modern)
         WeatherRepository.rememberLocation(ctx, modern)
     }
 

@@ -146,7 +146,7 @@ object WeatherRepository {
         null
     }
 
-    private fun save(context: Context, data: WeatherData) {
+    internal fun save(context: Context, data: WeatherData) {
         try {
             val f = file(context)
             val tmp = File(context.filesDir, "$CACHE_FILE.tmp")

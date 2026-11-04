@@ -21,7 +21,11 @@ class ContributeDialog : DialogFragment() {
         v.findViewById<android.view.View>(R.id.dialog_contribute_github_layout)?.setOnClickListener {
             val i = Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.addr_github)))
             WeatherDoge.applyChromeCustomTab(act, i)
-            startActivity(i)
+            try {
+                startActivity(i)
+            } catch (e: Exception) {
+                // browser not available
+            }
         }
         return AlertDialog.Builder(act, theme)
             .setView(v)

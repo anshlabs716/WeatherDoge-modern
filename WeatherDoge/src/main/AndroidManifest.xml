@@ -26,6 +26,17 @@
 
     <uses-feature android:name="android.hardware.location" />
 
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="text/plain" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
     <application
         android:name=".WeatherDoge"
         android:allowBackup="true"

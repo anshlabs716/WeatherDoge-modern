@@ -21,12 +21,20 @@ class AboutDialog : DialogFragment() {
         val activity = activity ?: return super.onCreateDialog(savedInstanceState)
         val v = activity.layoutInflater.inflate(R.layout.dialog_about, null)
         v.findViewById<android.view.View>(R.id.dialog_about_vb)?.setOnClickListener {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.addr_versobit))))
+            try {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.addr_versobit))))
+            } catch (e: Exception) {
+                // browser not available
+            }
         }
         v.findViewById<TextView>(R.id.dialog_about_version)?.text = BuildConfig.VERSION_NAME
         v.findViewById<TextView>(R.id.dialog_about_text2)?.movementMethod = LinkMovementMethod.getInstance()
         v.findViewById<android.view.View>(R.id.dialog_about_privacy)?.setOnClickListener {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.dialog_about_privacy_url))))
+            try {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(getString(R.string.dialog_about_privacy_url))))
+            } catch (e: Exception) {
+                // browser not available
+            }
         }
         return AlertDialog.Builder(activity, theme)
             .setView(v)

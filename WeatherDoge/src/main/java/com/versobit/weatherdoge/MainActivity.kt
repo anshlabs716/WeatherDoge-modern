@@ -3,6 +3,9 @@ package com.versobit.weatherdoge
 import android.app.Activity
 import android.app.AlertDialog
 import android.app.NotificationManager
+import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -172,7 +175,12 @@ class MainActivity : Activity(), LocationReceiver, ActivityCompat.OnRequestPermi
             if (link != null) {
                 val i = Intent(Intent.ACTION_VIEW, link)
                 WeatherDoge.applyChromeCustomTab(this@MainActivity, i)
-                startActivity(i)
+                try {
+                    startActivity(i)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Cannot launch link $link", e)
+                    showForecastDialog()
+                }
             } else {
                 showForecastDialog()
             }
@@ -201,26 +209,64 @@ class MainActivity : Activity(), LocationReceiver, ActivityCompat.OnRequestPermi
 
         findViewById<View>(R.id.man_fab_share)?.setOnClickListener {
             suchMenu?.collapse()
-            val i = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                val adjectives = weatherAdjectives
-                if (adjectives == null) {
-                    putExtra(Intent.EXTRA_SUBJECT, getString(R.string.app_name))
-                    putExtra(Intent.EXTRA_TEXT, getString(R.string.share_text).split("\n\n").getOrElse(1) { "Very doge weather" })
-                } else {
-                    var tempTemp = currentTemp
-                    var unit = "°C"
-                    if (UnitLocale.getDefault() == UnitLocale.IMPERIAL && !forceMetric) {
-                        tempTemp = tempTemp * 1.8 + 32.0
-                        unit = "°F"
-                    }
-                    val temp = "${Math.round(tempTemp)}$unit"
-                    putExtra(Intent.EXTRA_SUBJECT, getString(R.string.share_title, temp, currentLocation))
-                    val ism = WeatherDoge.getDogeism(wows, dogefixes, adjectives)
-                    putExtra(Intent.EXTRA_TEXT, getString(R.string.share_text, ism, temp, currentLocation))
+
+            var adjectives = weatherAdjectives
+            if (adjectives == null) {
+                val cached = Cache.loadWeatherData(this@MainActivity)
+                if (cached != null) {
+                    onWeatherLoaded(cached, null)
+                    adjectives = weatherAdjectives
                 }
             }
-            startActivity(Intent.createChooser(i, getString(R.string.action_share)))
+
+            val shareSubject: String
+            val shareContent: String
+
+            if (adjectives != null) {
+                var tempTemp = currentTemp
+                var unit = "°C"
+                if (UnitLocale.getDefault() == UnitLocale.IMPERIAL && !forceMetric) {
+                    tempTemp = tempTemp * 1.8 + 32.0
+                    unit = "°F"
+                }
+                val temp = "${Math.round(tempTemp)}$unit"
+                val loc = currentLocation.ifBlank { getString(R.string.placeholder_location) }
+                val ism = WeatherDoge.getDogeism(wows, dogefixes, adjectives)
+                shareSubject = getString(R.string.share_title, temp, loc)
+                shareContent = getString(R.string.share_text, ism, temp, loc)
+            } else {
+                val ism = WeatherDoge.getDogeism(wows, dogefixes, arrayOf("weather", "forecast", "clouds", "sky"))
+                shareSubject = "${getString(R.string.app_name)} - such weather"
+                shareContent = "$ism. Much weather, very doge!\n\nWow, this shibe is using Weather Doge for Android: https://play.google.com/store/apps/details?id=com.versobit.weatherdoge"
+            }
+
+            // Copy to clipboard as immediate safe fallback so the user always has it
+            try {
+                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                val clip = ClipData.newPlainText("Weather Doge", shareContent)
+                clipboard?.setPrimaryClip(clip)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to copy share text to clipboard", e)
+            }
+
+            val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_SUBJECT, shareSubject)
+                putExtra(Intent.EXTRA_TEXT, shareContent)
+            }
+
+            val chooser = Intent.createChooser(sendIntent, getString(R.string.action_share)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+            try {
+                startActivity(chooser)
+            } catch (e: ActivityNotFoundException) {
+                Toast.makeText(this@MainActivity, "Wow! Copied weather to clipboard!", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "Wow! Copied weather to clipboard!", Toast.LENGTH_SHORT).show()
+                Log.w(TAG, "Could not start share chooser", e)
+            }
         }
 
         findViewById<View>(R.id.man_fab_forecast)?.setOnClickListener {

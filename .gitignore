@@ -37,5 +37,13 @@ google-services.json
 # Local user-provided media (copyrighted files must never be committed)
 local-extras/
 
+# The app ships synthesized .wav fallbacks only. User media belongs in local-extras/,
+# which shadows these by base name at build time - never commit copies here.
+WeatherDoge/src/main/assets/sounds/*.mp3
+WeatherDoge/src/main/assets/sounds/*.aac
+WeatherDoge/src/main/assets/sounds/*.m4a
+WeatherDoge/src/main/assets/sounds/*.mp4
+public/
+
 # Generated audio assets (built by gen-assets/make_audio.py)
 gen-assets/out/

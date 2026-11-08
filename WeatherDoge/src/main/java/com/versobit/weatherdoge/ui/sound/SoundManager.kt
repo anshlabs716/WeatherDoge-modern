@@ -172,11 +172,18 @@ class SoundManager(context: Context) {
      * Safe to call from any thread; playback is dispatched internally by SoundPool.
      */
     fun play(slot: Slot, volume: Float = 1f) {
-        if (masterMute || !sfxEnabled) return
-        if (slot == Slot.BONK && !bonkEnabled) return
+        val allowed = if (slot == Slot.BONK) {
+            SoundRules.canPlayBonk(masterMute, sfxEnabled, bonkEnabled)
+        } else {
+            SoundRules.canPlaySfx(masterMute, sfxEnabled)
+        }
+        if (!allowed) return
         val id = soundIds[slot] ?: return
         soundPool?.play(id, volume, volume, 1, 0, 1f)
     }
+
+    /** Gain for media that lives outside the six slots (the NYAN video). */
+    fun videoVolume(): Float = SoundRules.videoVolume(masterMute, sfxEnabled)
 
     /** The bonk doubles as the UI tap sound and the doge touch sound. */
     fun playBonk() = play(Slot.BONK)
@@ -189,7 +196,7 @@ class SoundManager(context: Context) {
      */
     @Synchronized
     fun startMusic() {
-        if (masterMute || !musicEnabled) return
+        if (!SoundRules.canPlayMusic(masterMute, musicEnabled)) return
         val path = resolveAsset(Slot.BG_MUSIC) ?: run {
             Log.w(TAG, "No background music asset found"); return
         }
@@ -260,7 +267,7 @@ class SoundManager(context: Context) {
     fun resumeMusicAfterChaos() {
         if (!musicPausedForChaos) return
         musicPausedForChaos = false
-        if (masterMute || !musicEnabled) return
+        if (!SoundRules.canPlayMusic(masterMute, musicEnabled)) return
         val p = musicPlayer ?: return
         try {
             if (!p.isPlaying) {
@@ -277,7 +284,7 @@ class SoundManager(context: Context) {
     /** Toggle pause/resume for the settings preview button. */
     @Synchronized
     fun resumeMusic() {
-        if (masterMute || !musicEnabled) return
+        if (!SoundRules.canPlayMusic(masterMute, musicEnabled)) return
         val p = musicPlayer ?: return
         try {
             if (!p.isPlaying && requestFocus()) {

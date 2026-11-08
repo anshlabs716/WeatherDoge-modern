@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Copyright (C) 2014-2016, 2019 VersoBit
+    Copyright (C) 2026 Weather Doge contributors
 
     This file is part of Weather Doge.
 
@@ -52,6 +53,36 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
+            <!-- NYAN tab content: the user's video when present, original fallback otherwise -->
+            <FrameLayout
+                android:id="@+id/main_nyanframe"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone"
+                android:background="#12121A">
+
+                <VideoView
+                    android:id="@+id/main_nyanvideo"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center"
+                    android:visibility="gone" />
+
+                <com.versobit.weatherdoge.ui.nyan.NyanCatView
+                    android:id="@+id/main_nyancat"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:visibility="gone" />
+            </FrameLayout>
+
+            <!-- The Doge Dial rings the portrait -->
+            <com.versobit.weatherdoge.ui.DogeDialView
+                android:id="@+id/main_dial"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:contentDescription="@string/dial_content_description" />
+
             <ImageView
                 android:src="@drawable/doge_01d"
                 android:layout_width="350dp"
@@ -84,7 +115,7 @@
             <LinearLayout
                 android:id="@+id/main_suchinfogroup"
                 android:layout_alignParentBottom="true"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:orientation="vertical"
                 android:layout_height="wrap_content"
                 android:gravity="center_horizontal"
@@ -100,13 +131,22 @@
                     android:layout_marginBottom="-20dp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:maxLines="1"
+                    android:ellipsize="end"
                     android:paddingLeft="10sp"
                     android:paddingRight="10sp" />
 
+                <!--
+                    Issue #7: this row used to be a hard-coded 400dp, so the 120sp temperature
+                    was clipped on narrow screens. It now spans the available width and
+                    MainActivity scales the temperature down (never below 60sp) to fit.
+                -->
                 <RelativeLayout
-                    android:layout_width="400dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:id="@+id/main_suchtempgroup">
+                    android:id="@+id/main_suchtempgroup"
+                    android:paddingLeft="2dp"
+                    android:paddingRight="2dp">
 
                     <TextView
                         android:id="@+id/main_suchnegative"
@@ -114,6 +154,7 @@
                         style="@style/AppTheme.TextViewDropShadow"
                         android:textSize="120sp"
                         android:layout_toLeftOf="@+id/main_suchtemp"
+                        android:layout_alignTop="@id/main_suchtemp"
                         android:text="@string/very_negative"
                         android:layout_height="wrap_content"
                         android:layout_width="wrap_content"
@@ -127,6 +168,7 @@
                         android:id="@id/main_suchtemp"
                         android:text="@string/placeholder_temperature"
                         android:textSize="120sp"
+                        android:maxLines="1"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content" />
 
@@ -135,6 +177,7 @@
                         android:lineSpacingExtra="-20dp"
                         style="@style/AppTheme.TextViewDropShadow"
                         android:layout_toRightOf="@id/main_suchtemp"
+                        android:layout_alignTop="@id/main_suchtemp"
                         android:textSize="120sp"
                         android:text="@string/many_degree"
                         android:layout_width="wrap_content"
@@ -154,6 +197,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="-5dp"
+                    android:maxLines="1"
+                    android:ellipsize="end"
                     android:paddingRight="10sp"
                     android:paddingLeft="10sp" />
 
@@ -169,6 +214,74 @@
 
     </RelativeLayout>
 
+    <!-- CHAOS MODE colour wash; invisible until the memes are unleashed -->
+    <View
+        android:id="@+id/main_chaosflash"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0"
+        android:clickable="false"
+        android:background="#000000"
+        android:visibility="invisible" />
+
+    <!-- Tabs + seven day forecast, floating over the sky -->
+    <LinearLayout
+        android:id="@+id/main_topchrome"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:orientation="vertical"
+        android:paddingLeft="@dimen/activity_horizontal_margin"
+        android:paddingRight="@dimen/activity_horizontal_margin"
+        android:paddingTop="6dp">
+
+        <LinearLayout
+            android:id="@+id/main_tabs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/main_tab_doge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingLeft="18dp"
+                android:paddingRight="18dp"
+                android:paddingTop="5dp"
+                android:paddingBottom="5dp"
+                android:text="@string/tab_doge"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/tab_pill" />
+
+            <TextView
+                android:id="@+id/main_tab_nyan"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="8dp"
+                android:layout_marginStart="8dp"
+                android:paddingLeft="18dp"
+                android:paddingRight="18dp"
+                android:paddingTop="5dp"
+                android:paddingBottom="5dp"
+                android:text="@string/tab_nyan"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/tab_pill" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/main_forecast"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+    </LinearLayout>
 
     <com.getbase.floatingactionbutton.FloatingActionsMenu
         android:id="@+id/main_fam"
@@ -193,6 +306,22 @@
             android:layout_height="wrap_content"
             app:fab_title="@string/action_options"
             app:fab_icon="@drawable/ic_settings_white_48dp"
+            app:fab_size="mini" />
+
+        <com.getbase.floatingactionbutton.FloatingActionButton
+            android:id="@+id/man_fab_airhorn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:fab_title="@string/action_airhorn"
+            app:fab_icon="@drawable/ic_airhorn_white_48dp"
+            app:fab_size="mini" />
+
+        <com.getbase.floatingactionbutton.FloatingActionButton
+            android:id="@+id/man_fab_chaos"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:fab_title="@string/action_unleash"
+            app:fab_icon="@drawable/ic_chaos_white_48dp"
             app:fab_size="mini" />
 
     </com.getbase.floatingactionbutton.FloatingActionsMenu>

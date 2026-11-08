@@ -50,16 +50,16 @@
     <string name="unset">Wow unset</string>
     <string name="pref_weather_source_name">Weather Source</string>
     <string-array name="pref_weather_source_options">
-        <item>OpenWeatherMap</item>
-        <item>Yahoo! (disabled)</item>
-        <item>AccuWeather</item>
+        <item>Open-Meteo (no key needed)</item>
+        <item>OpenWeatherMap (own key)</item>
     </string-array>
-    <!-- These keys must stay in sync with WeatherUtil.Source -->
+    <!-- These keys must stay in sync with WeatherSource -->
     <string-array name="pref_weather_source_values">
+        <item>3</item>
         <item>0</item>
-        <item>1</item>
-        <item>2</item>
     </string-array>
+    <string name="pref_owm_key_name">OpenWeatherMap App ID</string>
+    <string name="pref_owm_key_desc">Free key from openweathermap.org — only needed for the OpenWeatherMap source.</string>
     <string name="very_neue_name">Very Neue</string>
     <string name="very_neue_desc">Use Comic Neue!</string>
     <string name="much_shadow_name">Much Shadow</string>
@@ -420,4 +420,41 @@
         <item>depress</item>
         <item>weather</item>
     </string-array>
+
+    <!-- Sound system (six locked slots) -->
+    <string name="pref_sound_header">Sound</string>
+    <string name="pref_sound_master_name">Master mute</string>
+    <string name="pref_sound_master_desc">Silence every sound Weather Doge can make.</string>
+    <string name="pref_sound_music_name">Background music</string>
+    <string name="pref_sound_music_desc">Loop the chill background track (never autoplays on launch).</string>
+    <string name="pref_sound_sfx_name">Sound effects</string>
+    <string name="pref_sound_sfx_desc">Bonks, meows, keyboard cat and airhorn.</string>
+    <string name="pref_sound_bonk_name">Bonk on tap</string>
+    <string name="pref_sound_bonk_desc">Play the bonk for every tap and every doge poke.</string>
+
+    <!-- Doge Dial -->
+    <string name="dial_content_description">Temperature dial</string>
+
+    <!-- Seven day forecast -->
+    <string name="forecast_today">Today</string>
+
+    <!-- CHAOS MODE -->
+    <string name="action_unleash">UNLEASH THE MEMES</string>
+    <string name="action_chaos_stop">STOP THE CHAOS</string>
+    <string name="chaos_active">MAXIMUM OVERDRIVE</string>
+    <string name="action_airhorn">AIRHORN</string>
+    <string name="chaos_finished">such chaos. very done. wow.</string>
+
+    <!-- NYAN tab -->
+    <string name="tab_doge">DOGE</string>
+    <string name="tab_nyan">NYAN</string>
+
+    <!-- Weather source / attribution -->
+    <string name="weather_attribution">Weather data by Open-Meteo.com</string>
+    <string name="weather_stale">Showing the last weather we could get — such offline</string>
+    <string name="error_no_location">wow, no location yet — set one in Options</string>
+
+    <!-- Credits -->
+    <string name="credits_title">Inspired by / Credits</string>
+    <string name="credits_body">Nintendo · Nyan Cat · Keyboard Cat · QuickSounds</string>
 </resources>

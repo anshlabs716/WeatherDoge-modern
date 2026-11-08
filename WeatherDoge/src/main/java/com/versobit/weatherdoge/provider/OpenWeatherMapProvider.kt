@@ -88,7 +88,7 @@ class OpenWeatherMapProvider(
             return WeatherResult.Failure(e.message ?: "Network error", e)
         }
 
-        val data = when (val parsed = parseCurrent(body, latitude, longitude, placeOverride ?: "")) {
+        val data = when (val parsed = parseCurrent(body, latitude, longitude, placeOverride)) {
             is WeatherResult -> return parsed
             is WeatherData -> parsed
             else -> return WeatherResult.Failure("Malformed OpenWeatherMap response")
@@ -108,7 +108,7 @@ class OpenWeatherMapProvider(
 
     /** Returns either parsed data or an error result. */
     private fun parseCurrent(body: String, latitude: Double, longitude: Double,
-                             placeOverride: String): Any {
+                             placeOverride: String?): Any {
         val json = JSONObject(body)
         val cod = json.optInt("cod", 200)
         if (cod != 200) {
@@ -124,7 +124,9 @@ class OpenWeatherMapProvider(
         val condition = prettyCondition(weather.getString("description"))
         val icon = weather.getString("icon")
 
-        val place = placeOverride
+        // An explicit override (manual location) wins; otherwise trust the city name
+        // OWM itself reports — the repository only reverse-geocodes when this is blank.
+        val place = placeOverride?.takeIf { it.isNotBlank() }
             ?: json.optString("name", "")
         val timezoneOffset = json.optLong("timezone", 0L)
         val zone = ZoneId.ofOffset("UTC", java.time.ZoneOffset.ofTotalSeconds(timezoneOffset.toInt()))

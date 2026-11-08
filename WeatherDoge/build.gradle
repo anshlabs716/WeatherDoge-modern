@@ -37,14 +37,38 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+        // Providers and the forecast strip use java.time; desugaring keeps that working
+        // all the way down to minSdk 21 instead of crashing on Android 8.0.
+        coreLibraryDesugaringEnabled true
     }
     kotlinOptions {
         jvmTarget = "17"
+    }
+    // Release signing lives in a git-ignored properties file. Forks and CI without it
+    // still build, they just produce an unsigned release APK.
+    def keystorePropsFile = rootProject.file('local-extras/keystore.properties')
+    def keystoreProps = new Properties()
+    def hasReleaseKeystore = keystorePropsFile.exists()
+    if (hasReleaseKeystore) {
+        keystorePropsFile.withInputStream { keystoreProps.load(it) }
+    }
+    signingConfigs {
+        release {
+            if (hasReleaseKeystore) {
+                storeFile rootProject.file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
     }
     buildTypes {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (hasReleaseKeystore) {
+                signingConfig signingConfigs.release
+            }
         }
     }
     namespace 'com.versobit.weatherdoge'
@@ -60,6 +84,7 @@ android {
 
 dependencies {
     implementation project(':LeonidsLib')
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0'
 
@@ -68,8 +93,6 @@ dependencies {
     implementation 'androidx.preference:preference-ktx:1.2.1'
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'com.getbase:floatingactionbutton:1.10.0'
-    implementation 'org.apache.commons:commons-lang3:3.12.0'
-    implementation 'commons-io:commons-io:2.11.0'
 
     def work_version = '2.10.0'
     implementation "androidx.work:work-runtime:$work_version"

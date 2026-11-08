@@ -3,18 +3,14 @@ package com.versobit.weatherdoge.location
 import android.content.Context
 
 /**
- * Selects the location API implementation based on build flavor.
- * FOSS build uses a stub that never connects (user must enter location manually).
+ * Selects the location API implementation for this build flavor.
+ *
+ * The FOSS build (the only flavor in this repository) uses the platform's own
+ * `android.location` stack — no Google Play Services anywhere, which keeps the app
+ * F-Droid eligible while fixing upstream issue #8 (location never worked because the
+ * selector handed out a permanently disconnected stub).
  */
 object FlavoredApiSelector {
     @JvmStatic
-    fun get(): DogeLocationApi = StubLocationApi
-
-    private object StubLocationApi : DogeLocationApi {
-        override val status: ApiStatus = ApiStatus.DISCONNECTED
-        override val isAvailable: Boolean = false
-        override fun configure(ctx: Context, receiver: LocationReceiver): DogeLocationApi = this
-        override fun connect() {}
-        override fun disconnect() {}
-    }
+    fun get(): DogeLocationApi = LocationManagerApi()
 }

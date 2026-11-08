@@ -80,6 +80,24 @@
         android:id="@+id/dialog_about_text2"
         android:textColor="@android:color/black" />
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textStyle="bold"
+        android:text="@string/credits_title"
+        android:id="@+id/dialog_about_credits_title"
+        android:textColor="@android:color/black" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="@string/credits_body"
+        android:id="@+id/dialog_about_credits"
+        android:textColor="@android:color/black" />
+
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
